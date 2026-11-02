@@ -4,13 +4,15 @@ import logging
 import json
 from typing import Any, Protocol
 from app.catalog import Catalog
+from app.commerce import Promotions
 from app.policy_service import get_policy_index
 
 class Provider(Protocol):
     def generate(self, contents: list, tools: list) -> dict: ...
 
 TOOLS = [
-    {'name':'compare_products','description':'Comparar 2 a 4 produtos pelo ID, relendo preços e especificações atuais. Calcula diferença acima do orçamento em Python.', 'parameters':{'type':'object','properties':{'product_ids':{'type':'array','items':{'type':'integer'}},'budget':{'type':'string'}},'required':['product_ids']}},
+    {'name':'search_promotions','description':'Consultar ofertas ativas atuais e preço promocional calculado, sem acumular PIX. Não confundir promoções periódicas do manual com ofertas ativas.', 'parameters':{'type':'object','properties':{'product_id':{'type':'integer'},'category_id':{'type':'integer'},'max_price':{'type':'string'},'limit':{'type':'integer'},'offset':{'type':'integer'}}}},
+    {'name':'compare_products','description':'Comparar 2 a 4 produtos pelo ID, relendo preços de tabela e especificações atuais; ofertas precisam de search_promotions. Calcula diferença acima do orçamento em Python.', 'parameters':{'type':'object','properties':{'product_ids':{'type':'array','items':{'type':'integer'}},'budget':{'type':'string'}},'required':['product_ids']}},
     {'name': 'search_policies',
      'description': 'Buscar evidências no manual da loja: horários de funcionamento/abertura, contatos, endereço, pagamentos, parcelamento, PIX, trocas, devoluções, garantia, frete e políticas. Obrigatória antes de responder fatos ou regras da loja. Não consulta preços, estoque ou pedidos individuais.',
      'parameters': {'type': 'object', 'properties': {
@@ -35,6 +37,13 @@ class Chat:
         self.recent_product_ids = list((state or {}).get('product_ids', []))[:16]
 
     def dispatch(self, name: str, args: dict) -> dict:
+        if name == 'search_promotions':
+            if set(args)-{'product_id','category_id','max_price','limit','offset'}:
+                return {'status':'invalid','items':[]}
+            result=Promotions(self.catalog.directory).search(**args)
+            if result['status']=='found':
+                for product in result['items']:self.products[product['product_id']]=product
+            return result
         if name == 'compare_products':
             if set(args)-{'product_ids','budget'} or 'product_ids' not in args:
                 return {'status':'invalid','items':[]}

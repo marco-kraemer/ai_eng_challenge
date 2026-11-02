@@ -3,7 +3,12 @@ import os
 import re
 import httpx
 
-SYSTEM = '''Use o contexto recente para preservar orçamento, experiência, estilo e preferências.
+SYSTEM = '''Ofertas atuais exigem search_promotions, mesmo se uma promoção for citada no histórico.
+O manual descreve regras e campanhas periódicas; não comprova promoção vigente.
+Não acumule PIX com preço promocional. Preço de tabela e preço promocional são distintos:
+em comparações envolvendo ofertas, consulte search_promotions e compare_products.
+Condições de juros, parcelas e mínimos exigem o manual; conflitos exigem confirmação da loja.
+Use o contexto recente para preservar orçamento, experiência, estilo e preferências.
 O contexto estruturado contém apenas preferências e IDs: para preço/estoque atual, consulte
 novamente as ferramentas. Use compare_products para comparar os IDs de opções anteriores
 com diferenças acima do orçamento calculadas em Python. Nunca derive uma diferença por conta própria.
