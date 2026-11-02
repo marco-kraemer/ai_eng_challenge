@@ -46,3 +46,31 @@ class Catalog:
                     'next_offset': offset + limit if offset + limit < len(matches) else None}
         except (OSError, ValueError, KeyError, InvalidOperation):
             return {'status': 'error', 'items': []}
+
+    def compare(self, product_ids: list[int], budget=None):
+        try:
+            if not isinstance(product_ids,list) or not 2 <= len(product_ids) <= 4 or any(type(i) is not int for i in product_ids):
+                raise ValueError('Invalid IDs')
+            ceiling=Decimal(str(budget)) if budget is not None else None
+            if ceiling is not None and (not ceiling.is_finite() or ceiling<0):
+                raise ValueError('Invalid budget')
+        except (ValueError,InvalidOperation,TypeError):
+            return {'status':'invalid','items':[]}
+        try:
+            with (self.directory/'products.csv').open(newline='',encoding='utf-8-sig') as stream:
+                rows={int(row['product_id']):row for row in csv.DictReader(stream)}
+            items=[]
+            for identifier in dict.fromkeys(product_ids):
+                if identifier not in rows:
+                    return {'status':'not_found','items':[]}
+                row=rows[identifier]
+                price=Decimal(row['price_brl'])
+                item={'product_id':identifier,'name':row['name'],'price_brl':str(price.quantize(Decimal('0.01'))),
+                      'category_id':int(row['category_id']),'status':row['status'],'stock_quantity':int(row['stock_quantity']),
+                      'description':row['description'],'specs':json.loads(row['specs'])}
+                if ceiling is not None:
+                    item['budget_difference_brl']=str(max(price-ceiling,Decimal(0)).quantize(Decimal('0.01')))
+                items.append(item)
+            return {'status':'found','items':items}
+        except (OSError,ValueError,KeyError,InvalidOperation):
+            return {'status':'error','items':[]}

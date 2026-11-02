@@ -25,7 +25,7 @@ class OpenRouter:
                 continue
             for part in content.get('parts', []):
                 if 'text' in part:
-                    messages.append({'role': 'user', 'content': part['text']})
+                    messages.append({'role': 'assistant' if content.get('role') in ('model','assistant') else 'user', 'content': part['text']})
                 elif 'functionResponse' in part:
                     if not pending_ids:
                         raise RuntimeError('Resposta de ferramenta sem chamada correspondente.')

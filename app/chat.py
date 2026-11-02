@@ -1,6 +1,7 @@
 """Bounded model/tool loop with an explicit read-only registry."""
 import csv
 import logging
+import json
 from typing import Any, Protocol
 from app.catalog import Catalog
 from app.policy_service import get_policy_index
@@ -9,6 +10,7 @@ class Provider(Protocol):
     def generate(self, contents: list, tools: list) -> dict: ...
 
 TOOLS = [
+    {'name':'compare_products','description':'Comparar 2 a 4 produtos pelo ID, relendo preços e especificações atuais. Calcula diferença acima do orçamento em Python.', 'parameters':{'type':'object','properties':{'product_ids':{'type':'array','items':{'type':'integer'}},'budget':{'type':'string'}},'required':['product_ids']}},
     {'name': 'search_policies',
      'description': 'Buscar evidências no manual da loja: horários de funcionamento/abertura, contatos, endereço, pagamentos, parcelamento, PIX, trocas, devoluções, garantia, frete e políticas. Obrigatória antes de responder fatos ou regras da loja. Não consulta preços, estoque ou pedidos individuais.',
      'parameters': {'type': 'object', 'properties': {
@@ -24,13 +26,23 @@ TOOLS = [
 ]
 
 class Chat:
-    def __init__(self, provider: Provider, catalog: Catalog):
+    def __init__(self, provider: Provider, catalog: Catalog, state: dict | None=None):
         self.provider = provider
         self.catalog = catalog
         self.products: dict[int, dict] = {}
         self.sources: dict[str, dict] = {}
+        self.preferences = dict((state or {}).get('preferences', {}))
+        self.recent_product_ids = list((state or {}).get('product_ids', []))[:16]
 
     def dispatch(self, name: str, args: dict) -> dict:
+        if name == 'compare_products':
+            if set(args)-{'product_ids','budget'} or 'product_ids' not in args:
+                return {'status':'invalid','items':[]}
+            result=self.catalog.compare(args['product_ids'],args.get('budget',self.preferences.get('max_price')))
+            if result['status']=='found':
+                for product in result['items']:
+                    self.products[product['product_id']]=product
+            return result
         if name == 'search_policies':
             if set(args) != {'query'} or not isinstance(args['query'], str) or not args['query'].strip() or len(args['query']) > 500:
                 return {'status': 'invalid', 'items': [], 'warnings': []}
@@ -47,6 +59,7 @@ class Chat:
             try:
                 result = self.catalog.search(**args)
                 if result['status'] == 'found':
+                    self.preferences.update({key:value for key,value in args.items() if key in {'category_id','min_price','max_price','in_stock','status'}})
                     for product in result['items']:
                         self.products[product['product_id']] = product
                 return result
@@ -60,11 +73,16 @@ class Chat:
                 return {'status': 'error', 'items': []}
         return {'status': 'invalid', 'items': []}
 
-    def reply(self, message: str) -> str:
+    def reply(self, message: str, history: list | None=None) -> str:
         if not message.strip() or len(message) > 2000:
             raise ValueError('Envie uma mensagem de 1 a 2000 caracteres.')
-        contents: list[dict[str, Any]] = [{'role': 'user', 'parts': [{'text': message}]}]
+        contents: list[dict[str, Any]] = list(history or [])
+        if self.preferences or self.recent_product_ids:
+            contents.append({'role':'user','parts':[{'text':'Contexto estruturado de preferências (não substitui consulta atual): '+json.dumps({'preferences':self.preferences,'product_ids':self.recent_product_ids},ensure_ascii=False)}]})
+        contents.append({'role':'user','parts':[{'text':message}]})
         for _ in range(4):
+            if len(json.dumps(contents,ensure_ascii=False))>40000:
+                raise RuntimeError('Limite de contexto atingido. Inicie outro assunto.')
             content = self.provider.generate(contents, TOOLS)
             calls = [p['functionCall'] for p in content.get('parts', []) if 'functionCall' in p]
             if not calls:
