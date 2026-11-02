@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+<defs>
+ <linearGradient id="wood" x2="1" y2="1"><stop stop-color="#ebc48b"/><stop offset="1" stop-color="#bc8149"/></linearGradient>
+ <linearGradient id="green" x2="1" y2="1"><stop stop-color="#4b8575"/><stop offset="1" stop-color="#224d42"/></linearGradient>
+ <linearGradient id="red" x2="1" y2="1"><stop stop-color="#c47c62"/><stop offset="1" stop-color="#884a37"/></linearGradient>
+ <linearGradient id="gold" x2="1" y2="1"><stop stop-color="#e8c878"/><stop offset="1" stop-color="#ad7d33"/></linearGradient>
+ <symbol id="violao" viewBox="0 0 180 150">
+  <ellipse cx="90" cy="139" rx="37" ry="5" fill="#263b2910"/>
+  <g transform="rotate(19 90 85)">
+   <path d="M81 75C66 64 54 77 66 94C45 109 54 137 83 135C110 140 125 116 105 96C116 78 106 65 96 76L96 87H81Z" fill="url(#wood)" stroke="#a16e3c" stroke-width="1.5"/>
+   <path d="M65 108Q59 128 79 131" fill="none" stroke="#f8deb3" stroke-width="2"/>
+   <rect x="84" y="26" width="11" height="67" rx="2" fill="#775238"/><rect x="82" y="10" width="15" height="22" rx="4" fill="#a57548"/>
+   <path d="M82 16h-4m4 8h-4m19-8h4m-4 8h4" stroke="#8b8c7b" stroke-width="3"/>
+   <circle cx="89" cy="99" r="12" fill="#b17d4a"/><circle cx="89" cy="99" r="9" fill="#453b2e"/><rect x="78" y="120" width="24" height="5" rx="2" fill="#654932"/>
+   <path d="M86 27v96m3-96v96m3-96v96M84 40h11m-11 12h11m-11 12h11m-11 11h11" stroke="#d9cab1" stroke-width=".65"/>
+  </g>
+ </symbol>
+ <symbol id="guitarra" viewBox="0 0 180 150">
+  <ellipse cx="90" cy="139" rx="35" ry="5" fill="#263b2910"/>
+  <g transform="rotate(22 90 84)">
+   <path d="M81 82L73 65Q61 71 69 88L58 101Q49 124 74 135Q101 144 112 123L111 102L99 86L103 63Q91 65 93 83Z" fill="url(#green)" stroke="#214e42" stroke-width="1.5"/>
+   <path d="M88 83L79 95L76 113L95 123L104 112L95 95Z" fill="#f5f0db"/>
+   <rect x="83" y="27" width="10" height="79" rx="1" fill="#b28b59"/><path d="M83 29L82 10L97 5L96 31Z" fill="#c7a36d"/>
+   <path d="M96 10h5m-5 7h5m-5 7h5" stroke="#7c887e" stroke-width="2.5"/>
+   <rect x="78" y="107" width="20" height="5" rx="1" fill="#e3d8be"/><rect x="79" y="120" width="20" height="4" rx="1" fill="#99a29a"/>
+   <path d="M86 24v99m3-100v100m3-100v100M83 41h10m-10 12h10m-10 12h10" stroke="#ebdfbe" stroke-width=".6"/><circle cx="103" cy="120" r="2.5" fill="#d8b97b"/>
+  </g>
+ </symbol>
+ <symbol id="baixo" viewBox="0 0 180 150">
+  <ellipse cx="90" cy="140" rx="32" ry="4" fill="#263b2910"/>
+  <g transform="rotate(23 90 83)">
+   <path d="M82 88L75 72Q65 81 72 94L62 109Q56 129 80 136Q105 140 111 121L104 99L100 76Q91 78 94 90Z" fill="url(#red)" stroke="#794c37" stroke-width="1.5"/>
+   <rect x="84" y="22" width="10" height="87" fill="#b99461"/><path d="M83 23L81 7L97 3L96 25Z" fill="#d6b886"/>
+   <path d="M82 10h-5m5 8h-5m20-9h5m-5 8h5" stroke="#8b9184" stroke-width="2.5"/>
+   <rect x="78" y="105" width="22" height="5" rx="1" fill="#3f4039"/><rect x="78" y="115" width="22" height="5" rx="1" fill="#3f4039"/><rect x="80" y="128" width="21" height="3" fill="#b6baa7"/>
+   <path d="M86 20v111m3-112v112m3-112v112M84 39h10m-10 13h10m-10 13h10m-10 13h10" stroke="#e7dcc1" stroke-width=".7"/><circle cx="103" cy="123" r="2" fill="#d1aa70"/>
+  </g>
+ </symbol>
+ <symbol id="teclado" viewBox="0 0 180 150">
+  <ellipse cx="90" cy="137" rx="55" ry="5" fill="#263b2910"/>
+  <path d="M58 94l63 43M123 94l-62 43" stroke="#666d63" stroke-width="5" stroke-linecap="round"/>
+  <rect x="20" y="55" width="140" height="44" rx="7" fill="#374d46"/><rect x="27" y="68" width="126" height="25" rx="2" fill="#faf7ed"/>
+  <path d="M39 69v24m12-24v24m12-24v24m12-24v24m12-24v24m12-24v24m12-24v24m12-24v24m12-24v24m12-24v24" stroke="#c9cbbd"/>
+  <path d="M37 68v15m12-15v15m24-15v15m12-15v15m12-15v15m24-15v15m12-15v15" stroke="#243c34" stroke-width="6"/>
+  <rect x="82" y="59" width="21" height="5" rx="1" fill="#a3bd9d"/><circle cx="35" cy="61" r="2" fill="#abb7a0"/><circle cx="43" cy="61" r="2" fill="#abb7a0"/>
+ </symbol>
+ <symbol id="bateria" viewBox="0 0 180 150">
+  <ellipse cx="90" cy="139" rx="70" ry="5" fill="#263b2910"/>
+  <path d="M30 36v96m-13 4 13-8 14 8M149 42v90m-13 4 13-8 14 8M90 75v58" fill="none" stroke="#8e998a" stroke-width="2.5"/>
+  <ellipse cx="30" cy="36" rx="23" ry="6" fill="#d8b96f"/><ellipse cx="149" cy="42" rx="23" ry="6" fill="#d8b96f"/>
+  <rect x="50" y="49" width="30" height="27" rx="5" fill="url(#red)"/><ellipse cx="65" cy="49" rx="15" ry="5" fill="#efe9d9" stroke="#8f9588"/>
+  <rect x="93" y="46" width="32" height="28" rx="5" fill="url(#red)"/><ellipse cx="109" cy="46" rx="16" ry="5" fill="#efe9d9" stroke="#8f9588"/>
+  <rect x="129" y="83" width="32" height="31" rx="4" fill="url(#red)"/><ellipse cx="145" cy="83" rx="16" ry="5" fill="#efe9d9" stroke="#8f9588"/>
+  <path d="M132 113v19m26-19v19M51 90l-12 40" stroke="#8e998a" stroke-width="2.5"/>
+  <circle cx="88" cy="105" r="33" fill="url(#red)" stroke="#8d503c" stroke-width="2"/><circle cx="88" cy="105" r="27" fill="#f3eddf" stroke="#b5b5a2" stroke-width="2"/><circle cx="99" cy="117" r="6" fill="#42554b"/>
+  <path d="M67 133l-5 7m49-7 5 7" stroke="#6b7767" stroke-width="3"/>
+ </symbol>
+ <symbol id="ukulele" viewBox="0 0 180 150">
+  <ellipse cx="90" cy="139" rx="33" ry="5" fill="#263b2910"/>
+  <g transform="rotate(19 90 88)">
+   <path d="M81 73C67 64 57 76 68 91C48 109 60 133 83 131C109 135 121 113 103 94C114 78 104 65 95 74L95 84H81Z" fill="#ddbd80" stroke="#b48d50" stroke-width="1.5"/>
+   <rect x="83" y="35" width="12" height="53" fill="#8c6440"/><rect x="81" y="16" width="16" height="24" rx="4" fill="#b08b51"/>
+   <path d="M81 23h-5m5 9h-5m21-9h5m-5 9h5" stroke="#969b88" stroke-width="2.5"/>
+   <circle cx="89" cy="98" r="11" fill="#ba9658"/><circle cx="89" cy="98" r="8" fill="#50472e"/><rect x="79" y="118" width="22" height="5" rx="2" fill="#8b663a"/>
+   <path d="M86 31v90m3-90v90m3-90v90M83 48h12m-12 11h12m-12 11h12" stroke="#eadfc4" stroke-width=".75"/>
+  </g>
+ </symbol>
+ <symbol id="violino" viewBox="0 0 180 150">
+  <ellipse cx="90" cy="139" rx="36" ry="5" fill="#263b2910"/>
+  <g transform="rotate(15 87 85)">
+   <path d="M80 66C60 63 60 80 73 89C59 92 65 101 69 104C48 119 68 136 87 131C110 135 123 117 103 104C109 97 112 90 99 88C114 72 101 62 93 68Z" fill="#c98b4d" stroke="#945d32" stroke-width="1.6"/>
+   <rect x="82" y="28" width="9" height="63" fill="#6b4934"/><path d="M82 30V13q9-9 11 1l-2 16" fill="#a06d3d" stroke="#85532b"/>
+   <path d="M81 18h-5m16 5h5" stroke="#68573e" stroke-width="3"/>
+   <path d="M83 112l8 0-4 16Z" fill="#503d2b"/><path d="M76 100q-8 0-4 10m24-10q8 0 4 10" fill="none" stroke="#81512d" stroke-width="2"/>
+   <path d="M83 29v85m3-85v85m3-85v85M79 105h16" stroke="#e1d3ac" stroke-width=".7"/>
+  </g><path d="M129 16l-21 118m18-117-21 116" stroke="#9b7548" stroke-width="2"/><path d="m109 120-3 15" stroke="#564934" stroke-width="4"/>
+ </symbol>
+ <symbol id="saxofone" viewBox="0 0 180 150">
+  <ellipse cx="96" cy="137" rx="42" ry="5" fill="#263b2910"/>
+  <path d="M116 20L99 31L84 85Q76 115 101 118Q126 120 132 88" fill="none" stroke="#ad7d33" stroke-width="20" stroke-linecap="round"/>
+  <path d="M116 20L99 31L84 85Q76 115 101 118Q126 120 132 88" fill="none" stroke="#e0ba61" stroke-width="14" stroke-linecap="round"/>
+  <path d="m114 21 12-7" stroke="#37483a" stroke-width="8" stroke-linecap="round"/>
+  <path d="M121 96l-3-22q16 7 31 1l-11 26" fill="url(#gold)"/><ellipse cx="133" cy="75" rx="16" ry="7" fill="#775d2e" stroke="#d8b367" stroke-width="3"/>
+  <path d="m97 42-11 49" stroke="#f5dea2" stroke-width="2"/>
+  <g fill="#f0d698" stroke="#ab813d"><circle cx="99" cy="48" r="4"/><circle cx="96" cy="60" r="4"/><circle cx="92" cy="73" r="4"/><circle cx="89" cy="86" r="4"/></g>
+ </symbol>
+ <symbol id="trompete" viewBox="0 0 180 150">
+  <ellipse cx="91" cy="130" rx="66" ry="5" fill="#263b2910"/>
+  <path d="M25 76h102l27-15v43l-27-15H25Z" fill="url(#gold)" stroke="#ad853e" stroke-width="1.5"/><ellipse cx="154" cy="82" rx="6" ry="21" fill="#80632e" stroke="#dfc27d" stroke-width="3"/>
+  <path d="M36 88v12q0 16 17 16h56q16 0 16-15V89" fill="none" stroke="#c79e52" stroke-width="7"/><path d="M47 89v10q0 7 9 7h48q8 0 8-7V89" fill="none" stroke="#e8c97f" stroke-width="3"/>
+  <path d="M60 70V48m18 22V46m18 24V47" stroke="#ad853e" stroke-width="6"/><path d="M53 47h14m4-2h14m4 1h14" stroke="#d8c694" stroke-width="4" stroke-linecap="round"/>
+  <path d="M13 75h14m-14-4v9" stroke="#9c987d" stroke-width="5" stroke-linecap="round"/>
+ </symbol>
+ <symbol id="generico" viewBox="0 0 180 150"><path d="M100 35v65a17 17 0 1 1-7-14V44l37-10v54a17 17 0 1 1-7-14V24Z" fill="#6d8b73"/></symbol>
+</defs>
+</svg>

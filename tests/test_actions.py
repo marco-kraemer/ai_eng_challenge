@@ -14,4 +14,4 @@ class ActionTests(unittest.TestCase):
     def test_action_cannot_be_forged_or_reuse_other_conversation(self):
         with self.assertRaises(ValueError):resolve_action('compare',{})
         with self.assertRaises(ValueError):resolve_action('run_code',{'allowed_actions':['run_code']})
-        self.assertIn('Compare',resolve_action('compare',{'allowed_actions':['compare']}))
+        self.assertIn('diferença',resolve_action('compare',{'allowed_actions':['compare']}))

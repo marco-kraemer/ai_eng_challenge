@@ -1,23 +1,22 @@
-"""Allowlisted UI continuations. Labels never execute arbitrary tools or permissions."""
+"""Customer-facing, allowlisted continuations; no internal staff actions."""
 REGISTRY = {
-    'draft': ('Preparar resposta ao cliente', 'Prepare apenas uma mensagem curta, pronta para o atendente revisar e encaminhar ao cliente, com base na dúvida e nas evidências deste atendimento. Consulte novamente as fontes antes de escrever. Preserve condições, limites e divergências relevantes; não prometa ações não realizadas e não inclua instruções internas.'),
-    'compare': ('Comparar opções', 'Compare os instrumentos que acabamos de consultar. Releia os dados atuais com compare_products e respeite meu orçamento.'),
-    'cheaper': ('Buscar mais baratos', 'Busque opções mais baratas na mesma categoria, preservando meu orçamento e preferências. Consulte preço e estoque novamente.'),
-    'policy_details': ('Entender a regra', 'Explique a regra principal que acabamos de consultar e suas exceções relevantes. Busque novamente no manual antes de responder.'),
-    'contact': ('Ver canais de contato', 'Consulte o manual e apresente os canais de contato da loja para esse atendimento, identificando eventuais divergências.'),
-    'categories': ('Explorar instrumentos', 'Quais categorias de instrumentos vocês têm? Consulte as categorias disponíveis.'),
-    'hours': ('Horários da loja', 'Quais são os horários de atendimento da loja? Consulte o manual.'),
-    'online': ('Compra online', 'A compra foi feita online.'),
-    'physical': ('Loja física', 'A compra foi feita presencialmente na loja física.'),
+    'compare': ('Comparar opções', 'Qual é a diferença entre essas opções?'),
+    'cheaper': ('Ver opções mais baratas', 'Tem alguma opção mais barata?'),
+    'policy_details': ('Entender melhor', 'Pode explicar melhor essa informação?'),
+    'contact': ('Falar com a loja', 'Como posso falar com a loja?'),
+    'categories': ('Escolher um instrumento', 'Quero escolher um instrumento.'),
+    'hours': ('Horários da loja', 'Quais são os horários da loja?'),
+    'online': ('Comprei online', 'Comprei online.'),
+    'physical': ('Comprei na loja física', 'Comprei na loja física.'),
 }
 
 def next_actions(result: dict) -> list[dict]:
     if result.get('needs_return_channel'):
         identifiers=['online','physical']
     elif len(result.get('products',[]))>=2:
-        identifiers=['compare','cheaper','draft'] if not result.get('draft') else ['compare','cheaper','contact']
+        identifiers=['compare','cheaper','contact']
     elif result.get('sources'):
-        identifiers=['policy_details','draft','contact'] if not result.get('draft') else ['policy_details','contact']
+        identifiers=['policy_details','contact']
     elif result.get('products'):
         identifiers=['cheaper','contact']
     else:
@@ -26,5 +25,5 @@ def next_actions(result: dict) -> list[dict]:
 
 def resolve_action(identifier: str, state: dict) -> str:
     if identifier not in REGISTRY or identifier not in state.get('allowed_actions',[]):
-        raise ValueError('Essa opção não está disponível neste atendimento. Escolha uma opção atual ou escreva sua pergunta.')
+        raise ValueError('Essa opção não está disponível nesta conversa. Escolha uma opção atual ou escreva sua pergunta.')
     return REGISTRY[identifier][1]

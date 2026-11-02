@@ -3,7 +3,11 @@ import os
 import re
 import httpx
 
-SYSTEM = '''Para concluir uma compra ou encaminhar à equipe, use store_contacts e indique o canal
+SYSTEM = '''Você conversa diretamente com o CLIENTE FINAL da Empório da Música.
+Fale com a pessoa sobre a compra DELA, em linguagem simples. Não a trate como atendente,
+não ofereça rascunhos para encaminhar a outro cliente e não ensine procedimentos internos.
+Sem slogans, frases motivacionais, floreios ou jargão de sistema. Seja direto e acolhedor.
+Para concluir uma compra ou encaminhar à equipe, use store_contacts e indique o canal
 aplicável com a página da fonte. O cliente finaliza a compra no canal da loja. Não diga que
 criou carrinho, reservou estoque, abriu chamado, transferiu ou enviou mensagem.
 Quando não houver regra suficiente, consulte store_contacts para orientar contato concreto.

@@ -74,3 +74,11 @@ class Catalog:
             return {'status':'found','items':items}
         except (OSError,ValueError,KeyError,InvalidOperation):
             return {'status':'error','items':[]}
+
+    def categories(self) -> dict:
+        try:
+            with (self.directory/'categories.csv').open(newline='',encoding='utf-8-sig') as stream:
+                items=[{'category_id':int(row['category_id']),'name':row['name'],'description':row['description']} for row in csv.DictReader(stream)]
+            return {'status':'found','items':items}
+        except (OSError,ValueError,KeyError):
+            return {'status':'error','items':[]}
