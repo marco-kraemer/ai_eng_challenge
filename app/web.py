@@ -3,6 +3,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, Response
 from pydantic import BaseModel, Field
 from app.catalog import Catalog
+from app.orders import Orders
 from app.conversations import ConversationStore
 from app.actions import next_actions, resolve_action
 from app.assistant import StoreAssistant
@@ -60,3 +61,17 @@ class Reset(BaseModel):
 def reset_conversation(body: Reset):
     conversations.reset(body.conversation_id)
     return Response(status_code=204)
+
+
+class OrderVerification(BaseModel):
+    order_id: int = Field(gt=0,le=999999999999,strict=True)
+    email: str = Field(min_length=3,max_length=254)
+
+@app.post('/api/orders/verify')
+def verify_order(body: OrderVerification):
+    result=Orders(ROOT/'data').verify(body.order_id,body.email)
+    if result['status']=='error':
+        raise HTTPException(503,'Não foi possível consultar o pedido. Tente mais tarde.')
+    if result['status']=='invalid':
+        raise HTTPException(422,'Confira o número e o e-mail da compra.')
+    return result

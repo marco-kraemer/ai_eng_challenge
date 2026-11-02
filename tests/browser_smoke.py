@@ -42,6 +42,10 @@ with sync_playwright() as p:
     page.get_by_role('button',name='Copiar mensagem').click()
     page.get_by_text('Mensagem copiada. Revise antes de encaminhar.').wait_for()
     assert page.evaluate('navigator.clipboard.readText()')=='Olá! Confira estas opções com a loja.'
+    page.evaluate("navigator.clipboard.writeText=()=>Promise.reject(new Error('Denied'))")
+    page.get_by_role('button',name='Copiar mensagem').click()
+    page.get_by_text('Texto selecionado. Use a opção de copiar do seu dispositivo.').wait_for()
+    assert page.locator('.draft-text').evaluate('(node)=>node.selectionEnd-node.selectionStart===node.value.length')
     page.locator('.source summary').click()
     assert page.get_by_text('Trecho de evidência para conferência.',exact=True).is_visible()
     page.screenshot(path='/tmp/emporio-support-desktop.png')
@@ -58,6 +62,19 @@ with sync_playwright() as p:
     assert page.locator('[data-intent]').count()==4
     page.emulate_media(reduced_motion='reduce')
     assert page.locator('.message').first.evaluate('(node)=>getComputedStyle(node).animationName')=='none'
+    order_requests=[]
+    def verify(route):
+        order_requests.append(route.request.post_data_json)
+        route.fulfill(content_type='application/json',body=json.dumps({'status':'found','order':{'status':'shipped','estimated_delivery':'2026-11-10','tracking_code':'BRTEST'}}))
+    page.route('**/api/orders/verify',verify)
+    page.get_by_role('button',name='Consultar pedido',exact=True).click()
+    page.get_by_role('textbox',name='Número do pedido').fill('42')
+    page.get_by_role('textbox',name='E-mail da compra').fill('cliente@example.test')
+    page.get_by_role('button',name='Verificar pedido').click()
+    page.get_by_text('Status: Enviado',exact=False).wait_for()
+    assert order_requests[0]['order_id']==42
+    assert page.get_by_role('textbox',name='E-mail da compra').input_value()==''
+    assert all('cliente@example.test' not in json.dumps(request) for request in requests)
     assert not errors,errors
     browser.close()
     print('Browser OK: entry, keyboard, context actions, copy, sources, mobile, reset, retry, reduced motion.')

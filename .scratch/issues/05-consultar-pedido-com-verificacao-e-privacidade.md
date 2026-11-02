@@ -8,15 +8,19 @@ Projetar o resultado da ferramenta para conter somente status, previsão e códi
 **Bloqueado por:**
 - 01 — Consultar produtos pelo chat
 
-**Status:** ready-for-agent
+**Status:** complete
 
 **Referência:** `docs/decisoes-do-projeto-agente-artefact.md`
 
 ## Critérios de Aceitação
-- [ ] O fluxo com número e e-mail correspondentes retorna somente status, previsão e rastreio disponíveis.
-- [ ] Pedido inexistente e e-mail incorreto recebem a mesma resposta genérica, sem revelar qual dado estava correto.
-- [ ] Informações do pedido não são retornadas antes da verificação dos dois dados.
-- [ ] Testes automatizados inspecionam também o payload da ferramenta entregue ao modelo, garantindo ausência de cadastro e observações internas.
-- [ ] Testes cobrem correspondência válida, incorreta, pedido inexistente, entrada inválida, campos opcionais ausentes e erro de consulta.
-- [ ] O agente não afirma rastreamento ao vivo: explica que usa dados registrados e orienta consulta à transportadora ou contato com a loja.
-- [ ] Dados pessoais e credenciais de verificação não são gravados em logs de aplicação ou histórico persistente; a limitação de segurança está documentada.
+- [x] O fluxo com número e e-mail correspondentes retorna somente status, previsão e rastreio disponíveis.
+- [x] Pedido inexistente e e-mail incorreto recebem a mesma resposta genérica, sem revelar qual dado estava correto.
+- [x] Informações do pedido não são retornadas antes da verificação dos dois dados.
+- [x] Testes automatizados inspecionam também o payload da ferramenta entregue ao modelo, garantindo ausência de cadastro e observações internas.
+- [x] Testes cobrem correspondência válida, incorreta, pedido inexistente, entrada inválida, campos opcionais ausentes e erro de consulta.
+- [x] O agente não afirma rastreamento ao vivo: explica que usa dados registrados e orienta consulta à transportadora ou contato com a loja.
+- [x] Dados pessoais e credenciais de verificação não são gravados em logs de aplicação ou histórico persistente; a limitação de segurança está documentada.
+
+## Validação
+
+Verificação de pedido em endpoint separado: número/e-mail nunca são encaminhados ao modelo pelo formulário. E-mail digitado no chat é interceptado antes do provedor. Resposta whitelist contém apenas status, previsão e rastreio; falhas de correspondência são genéricas. Testes usam dados sintéticos e verificam dados omitidos, erros, validação e ausência de chamada ao modelo. Navegador real verificou o formulário e a limpeza dos campos após consulta. Número + e-mail continuam uma verificação fraca, documentada para o protótipo; o resultado é registrado, não rastreio ao vivo.
