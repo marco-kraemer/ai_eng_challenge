@@ -1,50 +1,61 @@
-// Minimal DOM harness for the short return-channel continuation; no browser dependency.
+// Minimal DOM harness. Real rendering and keyboard interaction use browser_smoke.py.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 class Element {
-  constructor() { this.children = []; this.events = new Map(); this.value = ''; this.disabled = false; }
+  constructor(tag = 'div') { this.tagName = tag; this.children = []; this.events = new Map(); this.attributes = new Map(); this.value = ''; this.disabled = false; }
   append(...items) { this.children.push(...items); }
   addEventListener(name, fn) { this.events.set(name, fn); }
   replaceChildren() { this.children = []; }
-  setAttribute() {}
-  removeAttribute() {}
+  setAttribute(name, value) { this.attributes.set(name, String(value)); if (name === 'class') this.className = value; }
+  removeAttribute(name) { this.attributes.delete(name); }
+  querySelectorAll(tag) { return descendants(this).filter(n => n !== this && n.tagName === tag); }
   focus() {}
 }
+function descendants(node) { return [node, ...(node.children || []).flatMap(descendants)]; }
 (async () => {
-  const nodes = new Map();
-  const requests = [];
-  const replies = [
-    {message: 'Online ou loja física?', products: [], sources: [], needs_return_channel: true},
-    {message: 'Consulte a regra de arrependimento.', products: [], sources: [{pages: [4], title: 'Devolução online', text: 'Evidência extraída.'}]},
-    {message: 'Online ou loja física?', products: [], sources: [], needs_return_channel: true},
-    {message: 'Olá!', products: [], sources: []},
-  ];
+  const nodes = new Map(), requests = [], resets = [], replies = [];
   const context = vm.createContext({Intl, AbortController, setTimeout, clearTimeout, document: {
-    querySelector: selector => {if (!nodes.has(selector)) nodes.set(selector, new Element()); return nodes.get(selector);},
-    querySelectorAll: () => [], createElement: () => new Element(), createTextNode: text => ({textContent: text}),
-  }, fetch: async (url, options) => {requests.push(JSON.parse(options.body)); return {ok: true, json: async () => await replies.shift()};}});
-  const script = fs.readFileSync('app/static/index.html', 'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
-  vm.runInContext(script, context);
+    querySelector: selector => { if (!nodes.has(selector)) nodes.set(selector, new Element()); return nodes.get(selector); },
+    querySelectorAll: () => [], createElement: tag => new Element(tag), createElementNS: (ns, tag) => new Element(tag), createTextNode: text => ({textContent: text}),
+  }, fetch: async (url, options = {}) => {
+    if (url === '/api/categories') return {ok: true, json: async () => ({categories: [{category_id: 1, name: 'Guitarras', label: 'Guitarras', illustration: '/assets/instruments.svg#guitarra'}]})};
+    if (url === '/api/conversation/reset') {resets.push(JSON.parse(options.body)); return {ok: true};}
+    requests.push({url, ...JSON.parse(options.body)});
+    return {ok: true, json: async () => await replies.shift()};
+  }});
+  vm.runInContext(fs.readFileSync('app/static/chat.js', 'utf8'), context);
+  for (const [raw, expected] of [['1.000,50', '1000.50'], ['1000.50', '1000.50'], ['1.000', '1000.00'], ['500', '500.00'], ['R$ 2.000,00', '2000.00'], ['', null], ['-1', null], ['NaN', null], ['1,234', null], ['1.23.4', null]]) {
+    assert.equal(vm.runInContext(`parseBudget(${JSON.stringify(raw)})`, context), expected);
+  }
+  replies.push({message: 'Online ou loja física?', products: [], sources: [], conversation_id: 'session-a', needs_return_channel: true});
   await vm.runInContext('submit("Posso devolver um instrumento?")', context);
+  replies.push({message: 'Consulte a regra de arrependimento.', products: [], sources: [{pages: [4], title: 'Devolução online', text: 'Evidência.'}], conversation_id: 'session-a'});
   await vm.runInContext('submit("Comprei online")', context);
-  assert.match(requests[1].message, /Posso devolver um instrumento/);
-  assert.match(requests[1].message, /Comprei online/);
-  assert.equal(vm.runInContext('pendingReturnQuestion', context), '');
-  function descendants(node) { return [node, ...(node.children || []).flatMap(descendants)]; }
-  assert.equal(descendants(nodes.get('#messages')).filter(n => n.className === 'source').length, 1);
-  await vm.runInContext('submit("Quero devolver")', context);
+  assert.equal(requests[1].conversation_id, 'session-a');
+  assert.equal(requests[1].message, 'Comprei online');
+  assert.equal(descendants(nodes.get('#messages')).filter(n => n.className === 'source-item').length, 1);
   nodes.get('#new').events.get('click')();
-  await vm.runInContext('submit("Oi")', context);
-  assert.equal(requests[3].message, 'Oi');
+  assert.equal(resets[0].conversation_id, 'session-a');
   let resolveOld;
-  replies.push(new Promise(resolve => {resolveOld=resolve;}));
-  const running=vm.runInContext('submit("pergunta antiga")',context);
-  await Promise.resolve();
-  nodes.get('#new').events.get('click')();
-  resolveOld({message:'Resposta antiga que não pode aparecer.',products:[],sources:[]});
-  await running;
-  assert.equal(nodes.get('#messages').children.length,0,'Late response must not repopulate a new conversation');
-  assert.equal(nodes.get('.send').disabled,false);
-  console.log('OK: return-channel continuation, source rendering and reset (minimal DOM harness).');
-})().catch(error => { console.error(error); process.exitCode = 1; });
+  replies.push(new Promise(resolve => {resolveOld = resolve;}));
+  const running = vm.runInContext('submit("pergunta antiga")', context);
+  await Promise.resolve(); nodes.get('#new').events.get('click')();
+  resolveOld({message: 'Resposta que não pode aparecer.', products: [], sources: []}); await running;
+  assert.equal(nodes.get('#messages').children.length, 0);
+  assert.equal(nodes.get('#message-form .send').disabled, false);
+  const before = requests.length;
+  await vm.runInContext('openFinder()', context);
+  assert.equal(requests.length, before, 'Opening a category picker must not send a model request');
+  const option = descendants(nodes.get('#picker')).find(n => n.attributes?.get('data-category-id') === '1');
+  option.events.get('click')();
+  replies.push({message: 'Opções de guitarras.', products: [], sources: [], conversation_id: 'session-b'});
+  await vm.runInContext('searchSelectedCatalog("1500.50")', context);
+  assert.equal(requests.at(-1).url, '/api/catalog/search');
+  assert.equal(requests.at(-1).category_id, 1);
+  assert.equal(requests.at(-1).max_price, '1500.50');
+  replies.push({message: 'Opções sem limite definido.', products: [], sources: []});
+  await vm.runInContext('searchSelectedCatalog(null)', context);
+  assert.equal(Object.hasOwn(requests.at(-1), 'max_price'), false);
+  console.log('OK: customer picker, BRL values, explicit category/budget, no default budget, conversation IDs, sources and late-response reset.');
+})().catch(error => {console.error(error); process.exitCode = 1;});

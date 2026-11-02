@@ -35,7 +35,7 @@ async def protect_requests(request,call_next):
     response.headers['Cache-Control']='no-store'
     response.headers['X-Content-Type-Options']='nosniff'
     response.headers['Referrer-Policy']='same-origin'
-    response.headers['Content-Security-Policy']="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+    response.headers['Content-Security-Policy']="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
     return response
 
 class Message(BaseModel):
@@ -155,3 +155,10 @@ def selected_catalog(selection: CatalogSelection):
         conversations.append(token,question,answer,state)
         return response
     finally:busy.release()
+
+
+@app.get('/assets/{name}')
+def client_asset(name: str):
+    media={'chat.css':'text/css','chat.js':'application/javascript'}
+    if name not in media:raise HTTPException(404)
+    return FileResponse(ROOT/'app/static'/name,media_type=media[name])
