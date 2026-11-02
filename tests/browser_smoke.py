@@ -42,7 +42,7 @@ with sync_playwright() as p:
     page.get_by_role('button',name='Copiar mensagem').click()
     page.get_by_text('Mensagem copiada. Revise antes de encaminhar.').wait_for()
     assert page.evaluate('navigator.clipboard.readText()')=='Olá! Confira estas opções com a loja.'
-    page.evaluate("navigator.clipboard.writeText=()=>Promise.reject(new Error('Denied'))")
+    page.evaluate("() => { navigator.clipboard.writeText=()=>Promise.reject(new Error('Denied')); }")
     page.get_by_role('button',name='Copiar mensagem').click()
     page.get_by_text('Texto selecionado. Use a opção de copiar do seu dispositivo.').wait_for()
     assert page.locator('.draft-text').evaluate('(node)=>node.selectionEnd-node.selectionStart===node.value.length')

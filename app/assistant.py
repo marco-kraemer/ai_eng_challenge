@@ -52,7 +52,7 @@ class StoreAssistant:
         if label != 'store':
             return {'message': REFUSAL, 'products': [], 'sources': []}
         answer = self.chat.reply(message, history=history)
-        return {'message': answer, 'products': list(self.chat.products.values())[:6], 'sources': list(self.chat.sources.values())[:6]}
+        return {'message': answer, 'products': list(self.chat.products.values())[:6], 'sources': list(self.chat.sources.values())[:6], 'contacts': list(self.chat.contacts.values())}
 
 
 def order_prompt() -> dict:

@@ -5,12 +5,14 @@ import json
 from typing import Any, Protocol
 from app.catalog import Catalog
 from app.commerce import Promotions
+from app.contacts import Contacts
 from app.policy_service import get_policy_index
 
 class Provider(Protocol):
     def generate(self, contents: list, tools: list) -> dict: ...
 
 TOOLS = [
+    {'name':'store_contacts','description':'Consultar canais oficiais para concluir compra ou falar com a equipe. Extrai telefones/e-mails e divergências do manual; não envia mensagens, não transfere e não cria pedidos.', 'parameters':{'type':'object','properties':{'channel':{'type':'string','enum':['all','remote','store']}}}},
     {'name':'search_promotions','description':'Consultar ofertas ativas atuais e preço promocional calculado, sem acumular PIX. Não confundir promoções periódicas do manual com ofertas ativas.', 'parameters':{'type':'object','properties':{'product_id':{'type':'integer'},'category_id':{'type':'integer'},'max_price':{'type':'string'},'limit':{'type':'integer'},'offset':{'type':'integer'}}}},
     {'name':'compare_products','description':'Comparar 2 a 4 produtos pelo ID, relendo preços de tabela e especificações atuais; ofertas precisam de search_promotions. Calcula diferença acima do orçamento em Python.', 'parameters':{'type':'object','properties':{'product_ids':{'type':'array','items':{'type':'integer'}},'budget':{'type':'string'}},'required':['product_ids']}},
     {'name': 'search_policies',
@@ -33,10 +35,18 @@ class Chat:
         self.catalog = catalog
         self.products: dict[int, dict] = {}
         self.sources: dict[str, dict] = {}
+        self.contacts: dict[str, dict] = {}
         self.preferences = dict((state or {}).get('preferences', {}))
         self.recent_product_ids = list((state or {}).get('product_ids', []))[:16]
 
     def dispatch(self, name: str, args: dict) -> dict:
+        if name == 'store_contacts':
+            if set(args)-{'channel'}:return {'status':'invalid','items':[]}
+            result=Contacts(self.catalog.directory).lookup(args.get('channel','all'))
+            if result['status']=='found':
+                for source in result['items']:self.sources[source['id']]=source
+                for contact in result['channels']:self.contacts[contact['kind']]=contact
+            return result
         if name == 'search_promotions':
             if set(args)-{'product_id','category_id','max_price','limit','offset'}:
                 return {'status':'invalid','items':[]}
