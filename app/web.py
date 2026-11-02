@@ -75,7 +75,7 @@ def reply(message: Message):
         raise HTTPException(422, str(exc)) from None
     except RuntimeError as exc:
         if str(exc).startswith('Limite'):
-            raise HTTPException(429,str(exc),headers={'Retry-After':'5'}) from None
+            raise HTTPException(429,str(exc),headers={'Retry-After':'60' if str(exc).startswith('Limite de uso do modelo') else '5'}) from None
         raise HTTPException(503, 'Atendimento indisponível no momento. Tente mais tarde.') from None
 
     finally:

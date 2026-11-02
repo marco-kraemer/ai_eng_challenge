@@ -30,7 +30,7 @@ Quando o trecho principal é de pagamento, as seções 3 e 3.1 são recuperadas 
 
 Para contatos, as seções 1.2 e 7 são recuperadas juntas quando uma delas é o resultado principal. O telefone dos dados da empresa e o do atendimento remoto são apresentados conforme o canal, sem escolher um número universal. Há ainda grafias diferentes do e-mail na capa e nos dados da empresa: uma pendência da fonte, sem correção por adivinhação.
 
-Uma consulta cujo resultado principal é devolução/troca também recebe a seção 4.4 de exceções. A consulta deve preservar a modalidade já informada pelo cliente; se faltar modalidade, o atendente esclarece ou pergunta. Essa expansão é específica da estrutura deste manual e precisa ser revisada se a numeração mudar.
+Uma consulta cujo resultado principal é devolução/troca também recebe a seção 4.4 de exceções. A consulta preserva a modalidade já informada pelo cliente. Se faltar modalidade em um pedido de devolução sem motivo específico, o classificador solicita uma única informação e a aplicação apresenta opções online/loja física. O contexto efêmero permite que a resposta seguinte complete essa consulta, sem histórico persistente. Essa expansão é específica da estrutura deste manual e precisa ser revisada se a numeração mudar.
 
 ## Cache e operação
 

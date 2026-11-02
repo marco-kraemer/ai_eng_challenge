@@ -1,0 +1,15 @@
+.git
+.env
+.env.*
+.venv
+.cache
+.mypy_cache
+.pytest_cache
+__pycache__
+.scratch
+tests
+docs
+scripts
+.agents
+.codex
+.aws

@@ -39,7 +39,7 @@ class LimitTests(unittest.TestCase):
             self.assertEqual(OpenRouter(api_key='test').generate([],[])['parts'][0]['text'],'Olá')
             self.assertEqual(post.call_count,2)
         with patch('app.openrouter.httpx.post',return_value=httpx.Response(429,request=request)) as post:
-            with self.assertRaises(RuntimeError):OpenRouter(api_key='test').generate([],[])
+            with self.assertRaisesRegex(RuntimeError,'Limite de uso'):OpenRouter(api_key='test').generate([],[])
             self.assertEqual(post.call_count,1)
 
     def test_permanent_errors_log_status_without_provider_body_or_credentials(self):

@@ -40,6 +40,9 @@ class OpenRouter:
                         json={'model': self.model, 'messages': messages,
                               **({'tools': [{'type': 'function', 'function': tool} for tool in tools]} if tools else {}),
                               'provider': {'require_parameters': True}, 'max_tokens': 2048}, timeout=60)
+                    if response.status_code==429:
+                        logging.getLogger(__name__).warning('OpenRouter request failed (429)')
+                        raise RuntimeError('Limite de uso do modelo atingido. Aguarde e tente mais tarde.')
                     if response.status_code in (502,503,504) and attempt==0:
                         continue
                     response.raise_for_status()

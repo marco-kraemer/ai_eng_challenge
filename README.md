@@ -1,76 +1,109 @@
 # Empório da Música
 
-Protótipo em desenvolvimento: chat FastAPI com catálogo CSV, busca híbrida no manual e OpenRouter. O fluxo real de consulta ao catálogo foi validado com duas chamadas de ferramentas; os demais critérios e tickets continuam em avaliação.
+Assistente híbrido para apoiar atendimentos e a escolha de instrumentos. Consulta produtos, promoções, políticas e canais da loja; verifica pedidos em um fluxo separado do modelo; prepara rascunhos de resposta para o cliente.
 
-## Executar localmente
+A Empório da Música é fictícia. Esta entrega usa os arquivos fornecidos no desafio Artefact e mantém as divergências do manual explícitas.
 
-Requer Python 3.12 ou superior. Na raiz do repositório:
+[Repositório](https://github.com/marco-kraemer/ai_eng_challenge) · [Exemplos reais](docs/exemplos-de-interacao.md) · [Busca no manual](docs/busca-politicas.md) · [Entrega e hospedagem](docs/entrega.md)
+
+## Executar
+
+Python 3.12, acesso à internet para instalação e, no primeiro uso de políticas, download do modelo de embeddings. Na raiz:
 
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
-# Crie .env na raiz com:
-# OPENROUTER_API_KEY=sua-chave
-# OPENROUTER_MODEL=openrouter/free
-.venv/bin/uvicorn app.web:app --host 127.0.0.1 --port 8000
+cp -n .env.example .env
 ```
 
-Abra http://127.0.0.1:8000. Sem configuração, a página funciona e o endpoint responde indisponibilidade. Não há resposta simulada apresentada como resposta de modelo real.
+Preencha `.env` localmente:
 
-## Modelo e custo
-
-O backend carrega `.env` automaticamente e usa OpenRouter. Aceita somente `openrouter/free` ou identificadores terminados em `:free`, sem fallback pago. A chave fica exclusivamente no servidor e `.env` é ignorado pelo Git.
-
-O [roteador gratuito](https://openrouter.ai/docs/guides/routing/routers/free-router) seleciona modelos compatíveis com ferramentas; o modelo pode variar a cada chamada. Cotas e disponibilidade dependem da conta e do provedor. Para avaliação reproduzível, fixe um modelo gratuito que suporte ferramentas.
-
-Validação real: a pergunta sobre violões ativos em estoque até R$ 600 executou duas chamadas de ferramentas e retornou Yamaha C40 (R$ 599,90), Tagima Memphis AC-39 (R$ 429,90) e Rozini RC-104 (R$ 459,90), presentes no CSV. Modelo reportado na resposta final: `nvidia/nemotron-3.5-super-vl:free`. Isso valida esse cenário, sem garantir todos os casos ou disponibilidade futura.
-
-O adaptador preserva identificadores das chamadas e devolve resultados pela [API de ferramentas](https://openrouter.ai/docs/guides/features/tool-calling). Erros e cotas esgotadas recebem resposta de indisponibilidade. O adaptador Gemini permanece no código como alternativa, mas o endpoint usa OpenRouter.
-
-## Verificação
+```dotenv
+OPENROUTER_API_KEY=sua-chave
+OPENROUTER_MODEL=openrouter/free
+```
 
 ```bash
-.venv/bin/python -m unittest discover -s tests -v
-.venv/bin/mypy app --check-untyped-defs
+.venv/bin/uvicorn app.web:app --host 127.0.0.1 --port 8000 --workers 1 --no-proxy-headers
 ```
 
-Testes usam provedor roteirizado e TestClient, sem chamadas externas nem custos. Cobrem filtros de orçamento/estoque, entradas inválidas, consulta vazia/erro, ciclo de ferramenta e indisponibilidade sem credencial. Não comprovam qualidade geral do modelo nem toda a experiência no navegador; a validação real descrita acima foi executada separadamente.
+Abra **http://localhost:8000**. A chave fica no servidor; `.env` é ignorado pelo Git e pelo Docker. Sem chave/cota, a página e a consulta protegida de pedidos continuam disponíveis, mas a geração de respostas informa indisponibilidade ou limite.
 
-## Decisões e limites atuais
-
-- FastAPI serve HTML/CSS/JavaScript sem frontend separado. Conteúdo de mensagens é inserido com `textContent`.
-- O modelo solicita ferramentas; Python executa as ferramentas registradas de catálogo, categorias e políticas. CSV é relido a cada consulta; preços usam Decimal.
-- Resultados têm no máximo dez produtos por chamada; o loop tem até quatro rodadas e três chamadas por rodada.
-- Chave apenas no servidor; erros externos não são enviados ao cliente com detalhes sensíveis.
-- O chat ainda não mantém contexto entre mensagens. A busca de políticas já está disponível. Pedidos, promoções estruturadas, limites públicos e hospedagem permanecem pendentes.
-- O prompt orienta fundamentação, mas a resposta livre do modelo ainda não tem garantia determinística contra invenção.
-- Sem histórico persistente e sem ferramentas de escrita, carrinho, reserva ou pagamento.
-
-## Uso de assistentes
-
-Codex foi usado para decompor decisões em tickets e implementar testes, catálogo, integração inicial e interface. O progresso e os bloqueios ficam em `.scratch/issues/`; decisões de produto estão em `docs/decisoes-do-projeto-agente-artefact.md`.
-
-## Identidade visual e escopo do atendimento
-
-A Empório da Música é fictícia no documento de produto. A identidade criada para o protótipo usa verde profundo, tons de papel, dourado e títulos serifados, sem alegar vínculo com uma empresa real. O chat tem sugestões iniciais, estados de carregamento e erro, layout responsivo e cards de produtos. Nome, descrição, preço e estoque dos cards vêm dos resultados estruturados do backend; o modelo não escreve HTML ou define esses dados. Conteúdo recebido é inserido com nós de texto, com suporte seguro a negrito simples.
-
-Antes de responder, `StoreAssistant` faz uma chamada isolada ao modelo para classificar a mensagem: assunto da loja, identidade ou fora de escopo. A chamada não recebe ferramentas e tem instruções próprias. Somente a classificação exata `store` libera o atendente. Identidade e recusa são textos fixos da aplicação. Resposta inválida é recusada; falha de rede/cota gera indisponibilidade e não libera a geração. Mensagens mistas tentando disfarçar programação como assunto da loja também são classificadas como fora de escopo.
-
-Isso adiciona uma requisição por mensagem, aumentando latência e consumo da cota gratuita. O classificador continua sendo um modelo e pode errar; não é uma garantia absoluta contra prompt injection. O prompt do atendente reforça a identidade, o escopo e a fundamentação, enquanto o registro de ferramentas limita operações possíveis. Validação determinística de todos os fatos da resposta livre, limites de taxa e contexto entre turnos continuam pendentes.
-
-Validação real desta mudança: aula de `for` em Python recusada; pergunta sobre nome respondida como assistente da Empório; pedido misto de substituir identidade e ensinar Python com guitarra recusado; busca de violões até R$ 600 retornou os produtos do catálogo. Os testes automatizados verificam que classificações negadas/inválidas não chegam ao atendente, identidade não é gerada livremente e cards vêm do catálogo. Falhas do classificador não liberam o agente.
-
-A camada visual foi implementada junto aos guardrails. O smoke test visual com Playwright não pôde iniciar Chromium neste ambiente por ausência da biblioteca de sistema `libnspr4.so`; desktop/mobile ainda precisam de conferência visual no navegador local. Playwright foi instalado apenas no ambiente de desenvolvimento, sem nova dependência da aplicação.
-
-
-## Políticas e RAG
-
-Perguntas como “que horas vocês abrem?” agora podem acionar `search_policies`. A busca combina BM25 e embeddings multilíngues locais e retorna trechos com página/seção. A interface mostra referências expansíveis. Não usa serviço vetorial pago nem envia o PDF completo ao modelo.
-
-O primeiro uso baixa cerca de 130 MB de modelo para `.cache/`. O pico medido do processo de avaliação foi de aproximadamente 672 MB de RAM: hospedagem com 512 MB não está validada. O índice é reconstruído automaticamente quando o PDF muda e pode ser preparado antes de abrir o chat:
+Para preparar o índice antes de abrir o chat e reproduzir a avaliação de recuperação, sem chamar OpenRouter:
 
 ```bash
 .venv/bin/python scripts/evaluate_policies.py --output docs/avaliacao-busca-politicas.json
 ```
 
-O comando não chama OpenRouter. A bateria de desenvolvimento recuperou as evidências esperadas em 20/22 casos com busca híbrida; inclui falhas conhecidas e falsos positivos. Consulte [implementação, operação, conflitos e limitações](docs/busca-politicas.md) e [resultados completos](docs/avaliacao-busca-politicas.json). A recuperação não garante, sozinha, que toda afirmação da resposta livre esteja correta.
+O modelo local usa aproximadamente 130 MB de disco e o processo de avaliação teve pico de cerca de 672 MB de RAM. Os vetores são reconstruídos quando o PDF muda. `POLICY_CACHE_DIR` permite escolher o diretório gravável do cache.
+
+## Usar
+
+- A tela inicial oferece instrumentos, políticas, situações de atendimento e informações da loja.
+- Próximos passos mudam conforme a consulta: comparar opções, buscar mais baratos, esclarecer regras, ver contatos e preparar resposta ao cliente.
+- Rascunhos têm bloco próprio, fontes e cópia explícita; a aplicação não envia mensagens ao cliente.
+- “Consultar pedido” pede número e e-mail em formulário separado. Só retorna status, previsão e rastreio; credenciais não vão ao modelo por esse formulário. E-mail digitado no chat também é interceptado antes do provedor.
+- “Outro assunto” apaga a conversa, rascunhos e pendências e cancela a apresentação de respostas antigas. Reabrir/recarregar a página começa outra sessão. Não usamos banco ou armazenamento persistente de conversas.
+
+## Verificar
+
+```bash
+.venv/bin/python -m unittest discover -s tests -v
+.venv/bin/mypy app --check-untyped-defs
+node tests/test_frontend.js
+```
+
+Os testes Python usam provedor simulado e dados sintéticos para pedidos, sem custo de modelo nem download dos embeddings. O teste Node requer Node 22 e usa um DOM mínimo para contexto de devolução, fontes e reinício com resposta atrasada.
+
+A verificação adicional em Chromium usa API simulada e cobre teclado, ações, rascunho/cópia e fallback, fontes, mobile, reinício, recuperação de erro e formulário de pedido:
+
+```bash
+.venv/bin/pip install playwright
+.venv/bin/python -m playwright install --with-deps chromium
+# Com o servidor local rodando:
+PYTHONPATH=. .venv/bin/python tests/browser_smoke.py
+```
+
+Playwright é opcional para desenvolvimento, fora das dependências da aplicação. Capturas dessa verificação ficam em `/tmp/emporio-*.png`. São verificações com dados simulados de API; os exemplos de chamadas reais estão documentados separadamente.
+
+## Arquitetura e decisões
+
+FastAPI serve HTML/CSS/JavaScript, sem frontend separado. `StoreAssistant` classifica escopo e identidade; `Chat` executa um registro de ferramentas somente leitura. Argumentos, filtros, cálculos e campos retornados são controlados no Python.
+
+| Informação | Fonte e consulta |
+|---|---|
+| Produto, categoria, preço de tabela, estoque | CSV, filtros estruturados e comparação por ID |
+| Promoção vigente e preço promocional | CSV de promoções ativas, Decimal, sem acumular PIX |
+| Política, horário, endereço | PDF: BM25 + embeddings E5 multilíngues locais, RRF e páginas |
+| Canal para concluir compra | Contatos extraídos literalmente do PDF, com divergências |
+| Pedido individual | Cruzamento de pedido + e-mail no backend, sem enviar cadastro ao modelo |
+
+A busca híbrida recuperou todas as seções esperadas em **20/22** casos de desenvolvimento, contra 18/22 na lexical e 16/22 na semântica isolada. [Resultados e falhas conhecidos](docs/avaliacao-busca-politicas.json). Essa métrica não comprova a correção de todas as respostas finais.
+
+O OpenRouter usa apenas `openrouter/free` ou identificadores `:free`; não há fallback pago. O roteador pode escolher modelos diferentes, e a cota varia com a conta e os provedores. [Documentação](https://openrouter.ai/docs/guides/routing/routers/free-router). Fixar um modelo gratuito compatível com ferramentas torna avaliações mais reproduzíveis. O adaptador Gemini permanece como alternativa técnica, mas o endpoint usa OpenRouter.
+
+## Limites e privacidade
+
+- Até 100 conversas em memória por processo; expiram após 15 minutos de inatividade. Tokens de conversa ficam apenas na página, sem cookies/localStorage. Histórico: até 12 mensagens e 8.000 caracteres, com e-mails removidos; estado mínimo guarda filtros, IDs e opções disponíveis. Sem sumarização automática.
+- Requisição: até 16 KB; mensagem: 2.000 caracteres. Contexto dinâmico serializado: até 24 KB UTF-8, um limite conservador em bytes, não a contagem exata do tokenizer do modelo. Saída configurada em até 2.048 tokens por geração.
+- Até quatro rodadas e três ferramentas por rodada, quatro atendimentos simultâneos, 20 requisições de chat/min/IP e cinco verificações de pedido/min/IP. Limites são locais a um processo; usar um worker. Não confiar em cabeçalhos de proxy sem configurar um proxy confiável.
+- No máximo uma repetição em timeout/conexão ou HTTP 502/503/504. HTTP 429 não é repetido automaticamente e recebe indicação de limite; não aciona serviço pago. A quota do modelo pode ficar indisponível mesmo com a aplicação saudável.
+- Número + e-mail é **verificação fraca**, sem autenticação forte. Produção exige autenticação/OTP, proteção distribuída contra tentativas e revisão de privacidade. Status/previsão/rastreio são registros da base, sem rastreamento ao vivo.
+- O manual diverge em contatos e mínimos de parcelamento; o agente deve expor a incerteza e pedir confirmação à equipe. Conteúdo recuperado permanece como dado de ferramenta, sem conceder permissões.
+- Identidade e recusa são controladas pela aplicação, mas a classificação de escopo e a redação dependem do modelo e podem errar. Rascunhos exigem revisão humana. Não garantimos ausência absoluta de alucinação ou prompt injection.
+- Não há carrinho, reserva, cupom, pedido novo, pagamento, transferência ou envio automático de mensagens. Logs não registram credenciais, cadastro ou corpo do provedor.
+
+## Docker e publicação
+
+Com Docker e Buildx:
+
+```bash
+docker buildx build --load -t emporio-demo:local .
+docker run --rm --env-file .env -p 127.0.0.1:8000:8000 emporio-demo:local
+```
+
+A imagem foi construída e testada com limite de 1 GB, incluindo busca híbrida real e verificação de pedido; o pico do teste foi de aproximadamente 531 MB com cache montado. A imagem não inclui `.env`, `.git`, caches ou artefatos pessoais. A execução local é a alternativa de entrega; **não há link público da aplicação publicado**. O remoto GitHub está configurado; acesso público ainda precisa ser confirmado (a consulta anônima retornou 404). A memória medida elimina a suposição de que um serviço de 512 MB seja suficiente. A análise de opções, requisitos de conta e pendências está em [Entrega e hospedagem](docs/entrega.md).
+
+## Uso de assistentes de código
+
+Codex ajudou na decomposição em tickets, implementação em ciclos de teste que falha/implementação/refatoração, validações e documentação. Os testes e limitações estão registrados no repositório; o histórico de commits preserva as fatias entregues. Decisões de produto: [documento original](docs/decisoes-do-projeto-agente-artefact.md). Backlog: `.scratch/issues/`.
