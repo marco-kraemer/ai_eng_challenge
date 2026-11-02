@@ -1,5 +1,6 @@
 """OpenRouter adapter with only free model selection and no paid fallback."""
 import json
+import logging
 import os
 from typing import Any
 import httpx
@@ -32,12 +33,19 @@ class OpenRouter:
                     messages.append({'role': 'tool', 'tool_call_id': pending_ids.pop(0),
                                      'content': json.dumps(part['functionResponse']['response'], ensure_ascii=False)})
         try:
-            response = httpx.post('https://openrouter.ai/api/v1/chat/completions',
-                headers={'Authorization': f'Bearer {self.api_key}'},
-                json={'model': self.model, 'messages': messages,
-                      **({'tools': [{'type': 'function', 'function': tool} for tool in tools]} if tools else {}),
-                      'provider': {'require_parameters': True}, 'max_tokens': 2048}, timeout=60)
-            response.raise_for_status()
+            for attempt in range(2):
+                try:
+                    response = httpx.post('https://openrouter.ai/api/v1/chat/completions',
+                        headers={'Authorization': f'Bearer {self.api_key}'},
+                        json={'model': self.model, 'messages': messages,
+                              **({'tools': [{'type': 'function', 'function': tool} for tool in tools]} if tools else {}),
+                              'provider': {'require_parameters': True}, 'max_tokens': 2048}, timeout=60)
+                    if response.status_code in (502,503,504) and attempt==0:
+                        continue
+                    response.raise_for_status()
+                    break
+                except (httpx.TimeoutException,httpx.ConnectError):
+                    if attempt==1:raise
             payload = response.json()
             native = payload['choices'][0]['message']
             self.last_model = payload.get('model')
@@ -51,5 +59,7 @@ class OpenRouter:
             if native.get('content'):
                 parts.append({'text': native['content']})
             return {'parts': parts, '_openrouter_message': native}
-        except (httpx.HTTPError, KeyError, IndexError, TypeError, ValueError):
+        except (httpx.HTTPError, KeyError, IndexError, TypeError, ValueError) as exc:
+            detail=exc.response.status_code if isinstance(exc,httpx.HTTPStatusError) else type(exc).__name__
+            logging.getLogger(__name__).warning('OpenRouter request failed (%s)',detail)
             raise RuntimeError('OpenRouter indisponível. Confira configuração e cota ou tente mais tarde.') from None

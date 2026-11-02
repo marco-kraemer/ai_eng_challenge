@@ -1,9 +1,11 @@
 from pathlib import Path
+import threading
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse, Response
+from fastapi.responses import HTMLResponse, Response, JSONResponse
 from pydantic import BaseModel, Field
 from app.catalog import Catalog
 from app.orders import Orders
+from app.limits import RateLimiter, BodyLimitMiddleware
 from app.conversations import ConversationStore
 from app.actions import next_actions, resolve_action
 from app.assistant import StoreAssistant
@@ -14,6 +16,26 @@ ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / '.env')
 app = FastAPI(title='Empório da Música')
 conversations = ConversationStore()
+rate_limiter=RateLimiter()
+CHAT_RATE=20
+ORDER_RATE=5
+chat_slots=threading.BoundedSemaphore(4)
+app.add_middleware(BodyLimitMiddleware,max_bytes=16000)
+
+@app.middleware('http')
+async def protect_requests(request,call_next):
+    limit=CHAT_RATE if request.url.path=='/api/chat' else ORDER_RATE if request.url.path=='/api/orders/verify' else None
+    if request.method=='POST' and limit is not None:
+        actor=request.client.host if request.client else 'unknown'
+        allowed,retry=rate_limiter.allow(request.url.path+':'+actor,limit)
+        if not allowed:
+            return JSONResponse({'detail':'Limite de consultas atingido. Aguarde um pouco antes de tentar novamente.'},status_code=429,headers={'Retry-After':str(retry)})
+    response=await call_next(request)
+    response.headers['Cache-Control']='no-store'
+    response.headers['X-Content-Type-Options']='nosniff'
+    response.headers['Referrer-Policy']='same-origin'
+    response.headers['Content-Security-Policy']="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+    return response
 
 class Message(BaseModel):
     message: str = Field(default='', max_length=2000)
@@ -30,6 +52,9 @@ def reply(message: Message):
     busy=conversations.acquire(token)
     if busy is None:
         raise HTTPException(409,'Aguarde a resposta anterior antes de enviar outra mensagem.')
+    if not chat_slots.acquire(blocking=False):
+        busy.release()
+        raise HTTPException(429,'O atendimento está ocupado. Tente em alguns instantes.',headers={'Retry-After':'5'})
     try:
         state=conversations.state(token)
         text=resolve_action(message.action_id,state) if message.action_id else message.message
@@ -48,11 +73,14 @@ def reply(message: Message):
         return result
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from None
-    except RuntimeError:
+    except RuntimeError as exc:
+        if str(exc).startswith('Limite'):
+            raise HTTPException(429,str(exc),headers={'Retry-After':'5'}) from None
         raise HTTPException(503, 'Atendimento indisponível no momento. Tente mais tarde.') from None
 
     finally:
         busy.release()
+        chat_slots.release()
 
 class Reset(BaseModel):
     conversation_id: str = Field(min_length=1,max_length=64)

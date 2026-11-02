@@ -100,7 +100,7 @@ class Chat:
             contents.append({'role':'user','parts':[{'text':'Contexto estruturado de preferências (não substitui consulta atual): '+json.dumps({'preferences':self.preferences,'product_ids':self.recent_product_ids},ensure_ascii=False)}]})
         contents.append({'role':'user','parts':[{'text':message}]})
         for _ in range(4):
-            if len(json.dumps(contents,ensure_ascii=False))>40000:
+            if len(json.dumps(contents,ensure_ascii=False).encode('utf-8'))>24000:
                 raise RuntimeError('Limite de contexto atingido. Inicie outro assunto.')
             content = self.provider.generate(contents, TOOLS)
             calls = [p['functionCall'] for p in content.get('parts', []) if 'functionCall' in p]
