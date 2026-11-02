@@ -1,6 +1,6 @@
-# Grooming do agente da Empório da Música
+# Decisões do projeto do agente da Empório da Música
 
-Este documento consolida a sessão de perguntas e respostas de grooming do desafio técnico da Artefact. Registra as decisões do usuário, propostas do assistente aceitas durante a conversa e pontos que ficaram em aberto. O PDF do desafio orienta o escopo; as decisões abaixo são as escolhas feitas para o protótipo.
+Este documento consolida a sessão de perguntas e respostas sobre o projeto do desafio técnico da Artefact. Registra as decisões do usuário, propostas do assistente aceitas durante a conversa e pontos que ficaram em aberto. O PDF do desafio orienta o escopo; as decisões abaixo são as escolhas feitas para o protótipo.
 
 ## Objetivo do produto
 
