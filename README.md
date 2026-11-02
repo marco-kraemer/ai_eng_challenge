@@ -1,6 +1,6 @@
 # Empório da Música
 
-Protótipo em desenvolvimento: chat FastAPI com catálogo CSV, adaptador Gemini REST e execução de ferramentas no backend. O ticket 01 ainda depende de validação com credencial real; os demais tickets permanecem bloqueados por essa dependência.
+Protótipo em desenvolvimento: chat FastAPI com catálogo CSV e OpenRouter. O fluxo real de consulta ao catálogo foi validado com duas chamadas de ferramentas; os demais critérios e tickets continuam em avaliação.
 
 ## Executar localmente
 
@@ -9,8 +9,9 @@ Requer Python 3.12 ou superior. Na raiz do repositório:
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
-export GEMINI_API_KEY='sua-chave'
-export GEMINI_MODEL='identificador-do-modelo-validado-na-sua-conta'
+# Crie .env na raiz com:
+# OPENROUTER_API_KEY=sua-chave
+# OPENROUTER_MODEL=openrouter/free
 .venv/bin/uvicorn app.web:app --host 127.0.0.1 --port 8000
 ```
 
@@ -18,9 +19,13 @@ Abra http://127.0.0.1:8000. Sem configuração, a página funciona e o endpoint 
 
 ## Modelo e custo
 
-Gemini é um candidato implementado, ainda não uma escolha validada. A [documentação de preços](https://ai.google.dev/gemini-api/docs/pricing) lista camada gratuita para determinados modelos, com disponibilidade limitada. Consulte o modelo e as cotas da conta antes de configurar. O backend não pode determinar se a chave pertence a uma conta com faturamento: use exclusivamente projeto sem cobrança habilitada para preservar custo zero. Não existe fallback para outro modelo ou serviço pago.
+O backend carrega `.env` automaticamente e usa OpenRouter. Aceita somente `openrouter/free` ou identificadores terminados em `:free`, sem fallback pago. A chave fica exclusivamente no servidor e `.env` é ignorado pelo Git.
 
-O adaptador usa o contrato REST `generateContent` e function calling descrito na [documentação oficial](https://ai.google.dev/gemini-api/docs/function-calling). Ainda falta executar chamada real para verificar compatibilidade do modelo escolhido, ida e volta das ferramentas e cotas. Nenhuma chave estava configurada nesta execução.
+O [roteador gratuito](https://openrouter.ai/docs/guides/routing/routers/free-router) seleciona modelos compatíveis com ferramentas; o modelo pode variar a cada chamada. Cotas e disponibilidade dependem da conta e do provedor. Para avaliação reproduzível, fixe um modelo gratuito que suporte ferramentas.
+
+Validação real: a pergunta sobre violões ativos em estoque até R$ 600 executou duas chamadas de ferramentas e retornou Yamaha C40 (R$ 599,90), Tagima Memphis AC-39 (R$ 429,90) e Rozini RC-104 (R$ 459,90), presentes no CSV. Modelo reportado na resposta final: `nvidia/nemotron-3.5-super-vl:free`. Isso valida esse cenário, sem garantir todos os casos ou disponibilidade futura.
+
+O adaptador preserva identificadores das chamadas e devolve resultados pela [API de ferramentas](https://openrouter.ai/docs/guides/features/tool-calling). Erros e cotas esgotadas recebem resposta de indisponibilidade. O adaptador Gemini permanece no código como alternativa, mas o endpoint usa OpenRouter.
 
 ## Verificação
 
@@ -29,7 +34,7 @@ O adaptador usa o contrato REST `generateContent` e function calling descrito na
 .venv/bin/mypy app --check-untyped-defs
 ```
 
-Testes usam provedor roteirizado e TestClient, sem chamadas externas nem custos. Cobrem filtros de orçamento/estoque, entradas inválidas, consulta vazia/erro, ciclo de ferramenta e indisponibilidade sem credencial. Não comprovam qualidade do modelo ou funcionamento real no navegador.
+Testes usam provedor roteirizado e TestClient, sem chamadas externas nem custos. Cobrem filtros de orçamento/estoque, entradas inválidas, consulta vazia/erro, ciclo de ferramenta e indisponibilidade sem credencial. Não comprovam qualidade geral do modelo nem toda a experiência no navegador; a validação real descrita acima foi executada separadamente.
 
 ## Decisões e limites atuais
 

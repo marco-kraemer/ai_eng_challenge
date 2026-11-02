@@ -4,9 +4,11 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 from app.catalog import Catalog
 from app.chat import Chat
-from app.provider import Gemini
+from app.openrouter import OpenRouter
+from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parent.parent
+load_dotenv(ROOT / '.env')
 app = FastAPI(title='Empório da Música')
 
 class Message(BaseModel):
@@ -19,7 +21,7 @@ def index():
 @app.post('/api/chat')
 def reply(message: Message):
     try:
-        return {'message': Chat(Gemini(), Catalog(ROOT / 'data')).reply(message.message)}
+        return {'message': Chat(OpenRouter(), Catalog(ROOT / 'data')).reply(message.message)}
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from None
     except RuntimeError:
