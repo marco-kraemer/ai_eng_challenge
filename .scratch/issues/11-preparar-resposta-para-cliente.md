@@ -7,7 +7,7 @@ A partir de uma orientação baseada em fontes, permitir preparar uma mensagem c
 - 10
 - 03
 
-**Status:** complete
+**Status:** superseded
 
 ## Critérios de Aceitação
 - [x] O rascunho usa somente fatos do atendimento atual e mantém limites e conflitos relevantes.
@@ -17,3 +17,7 @@ A partir de uma orientação baseada em fontes, permitir preparar uma mensagem c
 ## Validação
 
 33 testes Python, mypy e teste Node passam. Testes de sessão verificam isolamento, TTL, limites de histórico e reinício; comparação consulta CSV atual e calcula diferença monetária em Python. Playwright em navegador real verificou entrada por teclado, ações contextuais, identificação de conversa, fontes expansíveis, rascunho/cópia, mobile sem overflow horizontal, reinício, repetição após erro e movimento reduzido. O teste Node cobre descarte de resposta atrasada após novo assunto. Backend simulado nas verificações visuais, sem consumo de cota. Respostas livres e decisões do modelo continuam sujeitas a erro e revisão.
+
+## Correção de público
+
+O usuário esclareceu que o chatbot é para o cliente final. A preparação de rascunhos para atendentes foi removida e ações legadas são rejeitadas antes de chamar o modelo. Este ticket registra a decisão anterior, substituída por docs/experiencia-cliente.md.

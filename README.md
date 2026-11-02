@@ -1,6 +1,6 @@
 # Empório da Música
 
-Assistente híbrido para apoiar atendimentos e a escolha de instrumentos. Consulta produtos, promoções, políticas e canais da loja; verifica pedidos em um fluxo separado do modelo; prepara rascunhos de resposta para o cliente.
+Chatbot para clientes da Empório da Música. Ajuda a escolher instrumentos, tirar dúvidas sobre a compra, acompanhar pedidos e encontrar informações da loja.
 
 A Empório da Música é fictícia. Esta entrega usa os arquivos fornecidos no desafio Artefact e mantém as divergências do manual explícitas.
 
@@ -27,7 +27,7 @@ OPENROUTER_MODEL=openrouter/free
 .venv/bin/uvicorn app.web:app --host 127.0.0.1 --port 8000 --workers 1 --no-proxy-headers
 ```
 
-Abra **http://localhost:8000**. A chave fica no servidor; `.env` é ignorado pelo Git e pelo Docker. Sem chave/cota, a página e a consulta protegida de pedidos continuam disponíveis, mas a geração de respostas informa indisponibilidade ou limite.
+Abra **http://localhost:8000**. A chave fica no servidor; `.env` é ignorado pelo Git e pelo Docker. Sem chave/cota, a seleção de instrumento e orçamento, a busca estruturada no catálogo e a consulta protegida de pedidos continuam disponíveis. Somente a conversa gerada pelo modelo informa indisponibilidade ou limite.
 
 Para preparar o índice antes de abrir o chat e reproduzir a avaliação de recuperação, sem chamar OpenRouter:
 
@@ -39,11 +39,13 @@ O modelo local usa aproximadamente 130 MB de disco e o processo de avaliação t
 
 ## Usar
 
-- A tela inicial oferece instrumentos, políticas, situações de atendimento e informações da loja.
-- Próximos passos mudam conforme a consulta: comparar opções, buscar mais baratos, esclarecer regras, ver contatos e preparar resposta ao cliente.
-- Rascunhos têm bloco próprio, fontes e cópia explícita; a aplicação não envia mensagens ao cliente.
-- “Consultar pedido” pede número e e-mail em formulário separado. Só retorna status, previsão e rastreio; credenciais não vão ao modelo por esse formulário. E-mail digitado no chat também é interceptado antes do provedor.
-- “Outro assunto” apaga a conversa, rascunhos e pendências e cancela a apresentação de respostas antigas. Reabrir/recarregar a página começa outra sessão. Não usamos banco ou armazenamento persistente de conversas.
+- **Encontrar um instrumento:** abre nove categorias com ilustrações. Escolha o instrumento e depois um orçamento, com valores sugeridos, campo livre ou “Ainda não defini um valor”. A busca consulta diretamente o catálogo, sem chamada ao modelo e sem instrumento/preço predefinidos.
+- **Acompanhar meu pedido:** abre a verificação de número e e-mail da compra. Retorna apenas status, previsão e rastreio; as credenciais do formulário não vão ao modelo.
+- **Dúvidas sobre minha compra:** oferece assuntos como troca/devolução, defeito, entrega, pagamento e garantia. A pergunta é enviada somente depois de escolher o assunto.
+- **Informações da loja:** oferece horários, endereço e contato, sem mandar uma pergunta arbitrária ao abrir o menu.
+- **Nova conversa:** limpa mensagens e pendências, cancela a apresentação de respostas antigas e retorna às opções iniciais. Reabrir a página também inicia outra sessão.
+
+A interface é exclusivamente para o cliente final. Não oferece preparação de mensagens para outro cliente nem orientações de trabalho para atendentes. Ilustrações representam categorias, não fotos de produtos específicos. Detalhes e valores dos cards vêm dos CSVs.
 
 ## Verificar
 
@@ -53,9 +55,9 @@ O modelo local usa aproximadamente 130 MB de disco e o processo de avaliação t
 node tests/test_frontend.js
 ```
 
-Os testes Python usam provedor simulado e dados sintéticos para pedidos, sem custo de modelo nem download dos embeddings. O teste Node requer Node 22 e usa um DOM mínimo para contexto de devolução, fontes e reinício com resposta atrasada.
+Os testes Python usam provedor simulado e dados sintéticos para pedidos, sem custo de modelo nem download dos embeddings. O teste Node requer Node 22 e usa um DOM mínimo para o seletor, valores em reais, orçamento opcional, IDs de conversa, fontes e reinício com resposta atrasada.
 
-A verificação adicional em Chromium usa API simulada e cobre teclado, ações, rascunho/cópia e fallback, fontes, mobile, reinício, recuperação de erro e formulário de pedido:
+A verificação adicional em Chromium usa API simulada e cobre navegação por teclado, nove ilustrações carregadas, seleção de instrumento e valor, voltar etapas, orçamento opcional, catálogo real sem modelo, fontes, mobile, reinício, recuperação de erro e formulário de pedido:
 
 ```bash
 .venv/bin/pip install playwright
@@ -64,11 +66,11 @@ A verificação adicional em Chromium usa API simulada e cobre teclado, ações,
 PYTHONPATH=. .venv/bin/python tests/browser_smoke.py
 ```
 
-Playwright é opcional para desenvolvimento, fora das dependências da aplicação. Capturas dessa verificação ficam em `/tmp/emporio-*.png`. São verificações com dados simulados de API; os exemplos de chamadas reais estão documentados separadamente.
+Playwright é opcional para desenvolvimento, fora das dependências da aplicação. Capturas dessa verificação ficam em `/tmp/emporio-customer-*.png`. São verificações com dados simulados de API; os exemplos de chamadas reais estão documentados separadamente.
 
 ## Arquitetura e decisões
 
-FastAPI serve HTML/CSS/JavaScript, sem frontend separado. `StoreAssistant` classifica escopo e identidade; `Chat` executa um registro de ferramentas somente leitura. Argumentos, filtros, cálculos e campos retornados são controlados no Python.
+FastAPI serve HTML e arquivos CSS/JavaScript/SVG locais. Não há frontend separado ou dependência de imagens externas. `StoreAssistant` classifica escopo e identidade; `Chat` executa um registro de ferramentas somente leitura. Argumentos, filtros, cálculos e campos retornados são controlados no Python.
 
 | Informação | Fonte e consulta |
 |---|---|
@@ -90,7 +92,7 @@ O OpenRouter usa apenas `openrouter/free` ou identificadores `:free`; não há f
 - No máximo uma repetição em timeout/conexão ou HTTP 502/503/504. HTTP 429 não é repetido automaticamente e recebe indicação de limite; não aciona serviço pago. A quota do modelo pode ficar indisponível mesmo com a aplicação saudável.
 - Número + e-mail é **verificação fraca**, sem autenticação forte. Produção exige autenticação/OTP, proteção distribuída contra tentativas e revisão de privacidade. Status/previsão/rastreio são registros da base, sem rastreamento ao vivo.
 - O manual diverge em contatos e mínimos de parcelamento; o agente deve expor a incerteza e pedir confirmação à equipe. Conteúdo recuperado permanece como dado de ferramenta, sem conceder permissões.
-- Identidade e recusa são controladas pela aplicação, mas a classificação de escopo e a redação dependem do modelo e podem errar. Rascunhos exigem revisão humana. Não garantimos ausência absoluta de alucinação ou prompt injection.
+- Identidade e recusa são controladas pela aplicação, mas a classificação de escopo e a redação dependem do modelo e podem errar. Não garantimos ausência absoluta de alucinação ou prompt injection.
 - Não há carrinho, reserva, cupom, pedido novo, pagamento, transferência ou envio automático de mensagens. Logs não registram credenciais, cadastro ou corpo do provedor.
 
 ## Docker e publicação

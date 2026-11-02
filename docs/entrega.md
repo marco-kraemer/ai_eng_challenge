@@ -4,18 +4,18 @@
 
 Execução local documentada e remoto configurado em [GitHub](https://github.com/marco-kraemer/ai_eng_challenge). A consulta anônima à API GitHub retornou 404: o acesso público ao repositório ainda precisa ser confirmado pelo proprietário; não alteramos sua visibilidade. Não há URL pública da aplicação em hospedagem externa. Não foi contratado recurso pago.
 
-Funcionalidades: abertura por quatro intenções; consultas estruturadas de catálogo e promoções; comparação com diferença monetária calculada; RAG híbrido no manual; canais oficiais com fontes; contexto efêmero; próximos passos; rascunho para cliente com cópia explícita; consulta protegida de pedidos fora do modelo; limites e tratamento de erro.
+Funcionalidades: abertura por quatro caminhos de cliente, seletor ilustrado de instrumento e orçamento; consultas estruturadas de catálogo e promoções; comparação com diferença monetária calculada; RAG híbrido no manual; canais oficiais com fontes; contexto efêmero; próximos passos voltados ao comprador; consulta protegida de pedidos fora do modelo; limites e tratamento de erro.
 
-O público principal ainda não foi fechado entre atendente, cliente e ambos. A interface usa linguagem neutra de apoio ao atendimento. “Preparar resposta ao cliente” é voltado ao atendente, sem introduzir acesso a dados internos ou permissões administrativas.
+Público confirmado pelo usuário: CLIENTE FINAL. A interpretação anterior de apoio ao atendente foi corrigida. Foram removidos slogans, perguntas em terceira pessoa sobre outro cliente e o recurso de preparar/copiar rascunhos. A escolha de instrumento abre etapas explícitas de categoria e orçamento; não envia uma busca fixa de violão até R$ 600.
 
 ## Validações
 
 - Imagem Docker construída e executada com limite de 1 GB: página, API protegida de pedidos, ausência de chave embutida e recuperação híbrida com embeddings reais passam; pico de RSS aproximado de 531 MB no teste com cache montado.
 - Instalação das dependências em um segundo ambiente Python 3.12 limpo, sem usar pacotes da `.venv` do projeto.
-- 46 testes Python; verificação de tipos com mypy; teste Node de continuação de devolução, fontes e descarte de resposta atrasada.
-- Chromium real: desktop 1440×1000, celular 390×844, navegação por teclado, quatro intenções, ações contextuais, rascunho/cópia e alternativa quando a permissão falha, fontes expansíveis, reinício, repetição após erro, movimento reduzido e formulário de pedido sem enviar e-mail ao chat. API simulada nessa verificação, sem uso de cota externa.
+- 49 testes Python; verificação de tipos com mypy; teste Node de seletor, valores BRL, orçamento opcional, IDs de conversa, fontes e descarte de resposta atrasada.
+- Chromium real: desktop 1440×1000, celular 390×844, navegação por teclado, seleção entre nove categorias ilustradas, escolha/edição de preço e ausência de orçamento, catálogo real, ações contextuais, fontes expansíveis, reinício, repetição após erro, movimento reduzido e formulário de pedido sem enviar e-mail ao chat. Apenas as APIs do modelo e de verificação de pedido são simuladas nessa verificação; categorias, ilustrações e busca de catálogo são reais e não consomem cota do modelo.
 - Avaliação local de recuperação com embeddings reais: 20/22 casos de desenvolvimento positivos na busca híbrida. Casos perdidos e falsos positivos estão publicados no JSON e na documentação da busca.
-- Cinco exemplos reais com OpenRouter documentados separadamente. O teste final de continuação recebeu 429 do provedor: limite/cota disponível impediu validar esse último rascunho real; os testes não foram apresentados como prova de disponibilidade contínua do serviço.
+- Cinco exemplos reais com OpenRouter documentados separadamente. O teste de continuação da versão anterior recebeu 429 do provedor. Nesta revisão, o catálogo guiado funciona independentemente dessa cota; o recurso de rascunho foi removido. Os testes não são apresentados como prova de disponibilidade contínua da API de modelo.
 
 A contagem de testes não comprova ausência de alucinação. Verificações do provedor e do navegador têm escopos diferentes, descritos acima.
 
