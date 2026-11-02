@@ -12,10 +12,10 @@ class OpenRouter:
         self.last_model = None
         self.tool_calls = 0
 
-    def generate(self, contents, tools):
+    def generate(self, contents, tools, *, system=SYSTEM):
         if not self.api_key or not (self.model == 'openrouter/free' or self.model.endswith(':free')):
             raise RuntimeError('Configure uma chave e um modelo gratuito no servidor.')
-        messages: list[dict[str, Any]] = [{'role': 'system', 'content': SYSTEM}]
+        messages: list[dict[str, Any]] = [{'role': 'system', 'content': system}]
         pending_ids: list[str] = []
         for content in contents:
             if '_openrouter_message' in content:
@@ -35,7 +35,7 @@ class OpenRouter:
             response = httpx.post('https://openrouter.ai/api/v1/chat/completions',
                 headers={'Authorization': f'Bearer {self.api_key}'},
                 json={'model': self.model, 'messages': messages,
-                      'tools': [{'type': 'function', 'function': tool} for tool in tools],
+                      **({'tools': [{'type': 'function', 'function': tool} for tool in tools]} if tools else {}),
                       'provider': {'require_parameters': True}, 'max_tokens': 2048}, timeout=60)
             response.raise_for_status()
             payload = response.json()

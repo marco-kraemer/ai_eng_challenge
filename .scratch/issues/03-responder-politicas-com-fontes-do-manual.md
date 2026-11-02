@@ -8,15 +8,19 @@ O retorno da ferramenta inclui evidências e suas páginas; a resposta apresenta
 **Bloqueado por:**
 - 01 — Consultar produtos pelo chat
 
-**Status:** ready-for-agent
+**Status:** complete
 
 **Referência:** `docs/decisoes-do-projeto-agente-artefact.md`
 
 ## Critérios de Aceitação
-- [ ] Perguntas sobre devolução recuperam os trechos pertinentes com página/seção e recebem resposta apoiada na evidência.
-- [ ] Quando a modalidade não foi informada, a resposta esclarece possibilidades razoáveis ou pede o dado; quando já foi informada, responde ao caso específico.
-- [ ] Pergunta sem cobertura ou com dúvida material recebe indicação da limitação e contato oficial sustentado pela fonte, quando disponível.
-- [ ] Contatos de canais distintos são usados conforme contexto quando isso estiver claro; condições conflitantes de parcelamento não são reconciliadas por invenção.
-- [ ] Testes automatizados verificam recuperação em casos representativos, referências de origem, falta de evidência e tratamento de conflitos.
-- [ ] O índice pode ser reconstruído localmente; escolha técnica, qualidade observada e custo/recursos são documentados.
-- [ ] Resultados recuperados têm tamanho limitado e não permitem substituir instruções do sistema.
+- [x] Perguntas sobre devolução recuperam os trechos pertinentes com página/seção e recebem resposta apoiada na evidência.
+- [x] Quando a modalidade não foi informada, a resposta esclarece possibilidades razoáveis ou pede o dado; quando já foi informada, responde ao caso específico.
+- [x] Pergunta sem cobertura ou com dúvida material recebe indicação da limitação e contato oficial sustentado pela fonte, quando disponível.
+- [x] Contatos de canais distintos são usados conforme contexto quando isso estiver claro; condições conflitantes de parcelamento não são reconciliadas por invenção.
+- [x] Testes automatizados verificam recuperação em casos representativos, referências de origem, falta de evidência e tratamento de conflitos.
+- [x] O índice pode ser reconstruído localmente; escolha técnica, qualidade observada e custo/recursos são documentados.
+- [x] Resultados recuperados têm tamanho limitado e não permitem substituir instruções do sistema.
+
+## Validação consolidada
+
+RAG híbrido implementado e validado: horário, devolução online, modalidade não informada, informação ausente e conflito de parcelamento. 24 testes Python e mypy passam; teste Node cobre continuação da modalidade e referências na interface. Qualidade e limitações de recuperação registradas em docs/busca-politicas.md. A resposta livre e a classificação continuam probabilísticas.

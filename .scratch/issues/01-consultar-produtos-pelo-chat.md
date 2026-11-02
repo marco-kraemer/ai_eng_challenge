@@ -10,15 +10,15 @@ Iniciar documentação de execução, configuração e decisões. Usar commits i
 **Bloqueado por:**
 - Nenhum — pode iniciar imediatamente
 
-**Status:** in-progress
+**Status:** complete
 
 **Referência:** `docs/decisoes-do-projeto-agente-artefact.md`
 
 ## Critérios de Aceitação
-- [ ] Uma pergunta no navegador consulta produtos por categoria, faixa de preço, status e estoque e retorna registros correspondentes às fontes.
+- [x] Uma pergunta no navegador consulta produtos por categoria, faixa de preço, status e estoque e retorna registros correspondentes às fontes.
 - [x] Testes automatizados cobrem combinações de filtros, limites monetários, argumentos inválidos, resultados vazios e distinção entre encontrado, não encontrado e erro.
-- [ ] Preço e disponibilidade são consultados novamente antes de serem apresentados como atuais; histórico não substitui consulta.
-- [ ] Resultados são limitados e paginados; pedido de catálogo inteiro provoca pedido de recorte sem enviar toda a base ao modelo.
+- [x] Preço e disponibilidade são consultados novamente antes de serem apresentados como atuais; histórico não substitui consulta.
+- [x] Resultados são limitados e paginados; pedido de catálogo inteiro provoca pedido de recorte sem enviar toda a base ao modelo.
 - [x] O modelo usa apenas ferramentas registradas e validadas pelo Python; nenhuma ferramenta altera dados.
 - [x] Tool calling funciona com o modelo escolhido em execução real; configuração gratuita e limitações estão documentadas, com testes determinísticos usando um substituto do provedor.
 - [x] A chave permanece no servidor, fora do JavaScript e do versionamento; não há fallback automático pago.
@@ -31,3 +31,7 @@ Implementados catálogo, adaptador REST Gemini, loop de ferramentas e chat FastA
 ### Validação OpenRouter
 
 Integração real validada com `openrouter/free`: duas chamadas de ferramenta e três produtos até R$ 600 correspondentes ao catálogo. Modelo final reportado: `nvidia/nemotron-3.5-super-vl:free`. O backend carrega `.env` automaticamente. Oito testes passam e mypy passa. O bloqueio de credencial foi removido; demais critérios ainda exigem validação.
+
+## Validação consolidada
+
+Etapa aceita pelo usuário. Consulta real ao catálogo validada via OpenRouter; testes de filtros, ferramentas, chave e interface passam.

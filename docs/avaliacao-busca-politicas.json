@@ -1,0 +1,907 @@
+{
+  "model": "intfloat/multilingual-e5-small",
+  "chunks": 26,
+  "index_setup_seconds": 2.16,
+  "peak_process_rss_mb": 671.9,
+  "statistics": {
+    "lexical": {
+      "all_expected_in_top3": "18/22",
+      "mean_query_ms": 0.06,
+      "negative_cases": [
+        {
+          "question": "tem estacionamento subterrâneo gratuito?",
+          "status": "not_found",
+          "retrieved": []
+        },
+        {
+          "question": "aceitam bitcoin e ethereum?",
+          "status": "not_found",
+          "retrieved": []
+        },
+        {
+          "question": "qual a senha do wifi?",
+          "status": "not_found",
+          "retrieved": []
+        },
+        {
+          "question": "oferecem aulas de canto gratuitas?",
+          "status": "found",
+          "retrieved": [
+            "6.1"
+          ]
+        }
+      ]
+    },
+    "semantic": {
+      "all_expected_in_top3": "16/22",
+      "mean_query_ms": 5.43,
+      "negative_cases": [
+        {
+          "question": "tem estacionamento subterrâneo gratuito?",
+          "status": "not_found",
+          "retrieved": []
+        },
+        {
+          "question": "aceitam bitcoin e ethereum?",
+          "status": "not_found",
+          "retrieved": []
+        },
+        {
+          "question": "qual a senha do wifi?",
+          "status": "not_found",
+          "retrieved": []
+        },
+        {
+          "question": "oferecem aulas de canto gratuitas?",
+          "status": "not_found",
+          "retrieved": []
+        }
+      ]
+    },
+    "hybrid": {
+      "all_expected_in_top3": "20/22",
+      "mean_query_ms": 7.53,
+      "negative_cases": [
+        {
+          "question": "tem estacionamento subterrâneo gratuito?",
+          "status": "not_found",
+          "retrieved": []
+        },
+        {
+          "question": "aceitam bitcoin e ethereum?",
+          "status": "not_found",
+          "retrieved": []
+        },
+        {
+          "question": "qual a senha do wifi?",
+          "status": "not_found",
+          "retrieved": []
+        },
+        {
+          "question": "oferecem aulas de canto gratuitas?",
+          "status": "found",
+          "retrieved": [
+            "6.1"
+          ]
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "mode": "lexical",
+      "question": "que horas vocês abrem?",
+      "expected": [
+        "2"
+      ],
+      "retrieved": [
+        "2",
+        "7.1",
+        "7.3"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "lexical",
+      "question": "abrem quando?",
+      "expected": [
+        "2"
+      ],
+      "retrieved": [
+        "2",
+        "7.1"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "lexical",
+      "question": "sábado posso ir depois do almoço?",
+      "expected": [
+        "2"
+      ],
+      "retrieved": [
+        "2"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "lexical",
+      "question": "o WhatsApp atende domingo?",
+      "expected": [
+        "2"
+      ],
+      "retrieved": [
+        "2",
+        "7",
+        "5.3"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "lexical",
+      "question": "horário de funcionamento da loja",
+      "expected": [
+        "2"
+      ],
+      "retrieved": [
+        "2",
+        "7.1"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "lexical",
+      "question": "comprei pela internet e me arrependi",
+      "expected": [
+        "4.1"
+      ],
+      "retrieved": [
+        "4.1",
+        "4.4"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "lexical",
+      "question": "quero devolver minha compra online",
+      "expected": [
+        "4.1"
+      ],
+      "retrieved": [
+        "4.1",
+        "4.2",
+        "4.4"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "lexical",
+      "question": "o instrumento veio com defeito de fabricação",
+      "expected": [
+        "4.2"
+      ],
+      "retrieved": [
+        "4.2",
+        "8.3",
+        "4.4"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "lexical",
+      "question": "posso trocar por outra cor?",
+      "expected": [
+        "4.3"
+      ],
+      "retrieved": [
+        "4.3",
+        "4.4"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "lexical",
+      "question": "instrumentos personalizados podem ser trocados?",
+      "expected": [
+        "4.4"
+      ],
+      "retrieved": [
+        "4.2",
+        "7.1",
+        "4.4"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "lexical",
+      "question": "posso parcelar em três vezes?",
+      "expected": [
+        "3",
+        "3.1"
+      ],
+      "retrieved": [
+        "3",
+        "3.1"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "lexical",
+      "question": "qual o desconto no PIX?",
+      "expected": [
+        "3"
+      ],
+      "retrieved": [
+        "6.2",
+        "3",
+        "3.1"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "lexical",
+      "question": "posso acumular PIX com preço promocional?",
+      "expected": [
+        "6.2"
+      ],
+      "retrieved": [
+        "6.2",
+        "3",
+        "3.1"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "lexical",
+      "question": "qual o telefone de contato WhatsApp?",
+      "expected": [
+        "1.2",
+        "7"
+      ],
+      "retrieved": [
+        "1.2",
+        "7",
+        "9"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "lexical",
+      "question": "qual o endereço da loja?",
+      "expected": [
+        "1.2"
+      ],
+      "retrieved": [
+        "1.2",
+        "7",
+        "9"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "lexical",
+      "question": "qual o prazo do SEDEX para outras cidades?",
+      "expected": [
+        "5.2"
+      ],
+      "retrieved": [
+        "5.2",
+        "5.1",
+        "7.3"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "lexical",
+      "question": "meu instrumento tem garantia do fabricante?",
+      "expected": [
+        "8.2"
+      ],
+      "retrieved": [
+        "8.2",
+        "8.3",
+        "4.2"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "lexical",
+      "question": "vendem cabos e palhetas?",
+      "expected": [
+        "1",
+        "7.1"
+      ],
+      "retrieved": [
+        "1",
+        "7.1",
+        "8.3"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "lexical",
+      "question": "desisti depois de receber a encomenda da internet",
+      "expected": [
+        "4.1"
+      ],
+      "retrieved": [
+        "4.4"
+      ],
+      "all_expected_in_top3": false
+    },
+    {
+      "mode": "lexical",
+      "question": "paguei e quero meu dinheiro de volta",
+      "expected": [
+        "4.1"
+      ],
+      "retrieved": [
+        "6.1"
+      ],
+      "all_expected_in_top3": false
+    },
+    {
+      "mode": "lexical",
+      "question": "meu teclado pifou logo que chegou",
+      "expected": [
+        "4.2"
+      ],
+      "retrieved": [],
+      "all_expected_in_top3": false
+    },
+    {
+      "mode": "lexical",
+      "question": "posso dividir a compra em prestações?",
+      "expected": [
+        "3",
+        "3.1"
+      ],
+      "retrieved": [
+        "4.2",
+        "4.4"
+      ],
+      "all_expected_in_top3": false
+    },
+    {
+      "mode": "semantic",
+      "question": "que horas vocês abrem?",
+      "expected": [
+        "2"
+      ],
+      "retrieved": [
+        "4.1",
+        "2",
+        "4.4"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "semantic",
+      "question": "abrem quando?",
+      "expected": [
+        "2"
+      ],
+      "retrieved": [],
+      "all_expected_in_top3": false
+    },
+    {
+      "mode": "semantic",
+      "question": "sábado posso ir depois do almoço?",
+      "expected": [
+        "2"
+      ],
+      "retrieved": [],
+      "all_expected_in_top3": false
+    },
+    {
+      "mode": "semantic",
+      "question": "o WhatsApp atende domingo?",
+      "expected": [
+        "2"
+      ],
+      "retrieved": [],
+      "all_expected_in_top3": false
+    },
+    {
+      "mode": "semantic",
+      "question": "horário de funcionamento da loja",
+      "expected": [
+        "2"
+      ],
+      "retrieved": [
+        "2",
+        "7.1",
+        "4.1"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "semantic",
+      "question": "comprei pela internet e me arrependi",
+      "expected": [
+        "4.1"
+      ],
+      "retrieved": [
+        "4.1",
+        "4.4"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "semantic",
+      "question": "quero devolver minha compra online",
+      "expected": [
+        "4.1"
+      ],
+      "retrieved": [
+        "4.1",
+        "4",
+        "4.4"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "semantic",
+      "question": "o instrumento veio com defeito de fabricação",
+      "expected": [
+        "4.2"
+      ],
+      "retrieved": [
+        "4.2",
+        "4.4"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "semantic",
+      "question": "posso trocar por outra cor?",
+      "expected": [
+        "4.3"
+      ],
+      "retrieved": [
+        "4.3",
+        "4.2",
+        "4.4"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "semantic",
+      "question": "instrumentos personalizados podem ser trocados?",
+      "expected": [
+        "4.4"
+      ],
+      "retrieved": [
+        "4.2",
+        "4",
+        "4.4"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "semantic",
+      "question": "posso parcelar em três vezes?",
+      "expected": [
+        "3",
+        "3.1"
+      ],
+      "retrieved": [
+        "3",
+        "3.1",
+        "4.3"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "semantic",
+      "question": "qual o desconto no PIX?",
+      "expected": [
+        "3"
+      ],
+      "retrieved": [
+        "6.2",
+        "3",
+        "3.1"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "semantic",
+      "question": "posso acumular PIX com preço promocional?",
+      "expected": [
+        "6.2"
+      ],
+      "retrieved": [
+        "6.2",
+        "3"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "semantic",
+      "question": "qual o telefone de contato WhatsApp?",
+      "expected": [
+        "1.2",
+        "7"
+      ],
+      "retrieved": [
+        "1.2",
+        "7"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "semantic",
+      "question": "qual o endereço da loja?",
+      "expected": [
+        "1.2"
+      ],
+      "retrieved": [
+        "2",
+        "1.2",
+        "capa"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "semantic",
+      "question": "qual o prazo do SEDEX para outras cidades?",
+      "expected": [
+        "5.2"
+      ],
+      "retrieved": [
+        "5.2"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "semantic",
+      "question": "meu instrumento tem garantia do fabricante?",
+      "expected": [
+        "8.2"
+      ],
+      "retrieved": [
+        "8.2",
+        "4.2",
+        "8.3"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "semantic",
+      "question": "vendem cabos e palhetas?",
+      "expected": [
+        "1",
+        "7.1"
+      ],
+      "retrieved": [
+        "8.3",
+        "4.4"
+      ],
+      "all_expected_in_top3": false
+    },
+    {
+      "mode": "semantic",
+      "question": "desisti depois de receber a encomenda da internet",
+      "expected": [
+        "4.1"
+      ],
+      "retrieved": [
+        "4.1",
+        "4.4"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "semantic",
+      "question": "paguei e quero meu dinheiro de volta",
+      "expected": [
+        "4.1"
+      ],
+      "retrieved": [
+        "4.1",
+        "4.4"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "semantic",
+      "question": "meu teclado pifou logo que chegou",
+      "expected": [
+        "4.2"
+      ],
+      "retrieved": [],
+      "all_expected_in_top3": false
+    },
+    {
+      "mode": "semantic",
+      "question": "posso dividir a compra em prestações?",
+      "expected": [
+        "3",
+        "3.1"
+      ],
+      "retrieved": [],
+      "all_expected_in_top3": false
+    },
+    {
+      "mode": "hybrid",
+      "question": "que horas vocês abrem?",
+      "expected": [
+        "2"
+      ],
+      "retrieved": [
+        "2",
+        "7.1",
+        "7.3"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "hybrid",
+      "question": "abrem quando?",
+      "expected": [
+        "2"
+      ],
+      "retrieved": [
+        "2",
+        "7.1"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "hybrid",
+      "question": "sábado posso ir depois do almoço?",
+      "expected": [
+        "2"
+      ],
+      "retrieved": [
+        "2"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "hybrid",
+      "question": "o WhatsApp atende domingo?",
+      "expected": [
+        "2"
+      ],
+      "retrieved": [
+        "2",
+        "7",
+        "5.3"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "hybrid",
+      "question": "horário de funcionamento da loja",
+      "expected": [
+        "2"
+      ],
+      "retrieved": [
+        "2",
+        "7.1",
+        "4.1"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "hybrid",
+      "question": "comprei pela internet e me arrependi",
+      "expected": [
+        "4.1"
+      ],
+      "retrieved": [
+        "4.1",
+        "4.4"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "hybrid",
+      "question": "quero devolver minha compra online",
+      "expected": [
+        "4.1"
+      ],
+      "retrieved": [
+        "4.1",
+        "4.2",
+        "4.4"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "hybrid",
+      "question": "o instrumento veio com defeito de fabricação",
+      "expected": [
+        "4.2"
+      ],
+      "retrieved": [
+        "4.2",
+        "8.3",
+        "4.4"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "hybrid",
+      "question": "posso trocar por outra cor?",
+      "expected": [
+        "4.3"
+      ],
+      "retrieved": [
+        "4.3",
+        "4.2",
+        "4.4"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "hybrid",
+      "question": "instrumentos personalizados podem ser trocados?",
+      "expected": [
+        "4.4"
+      ],
+      "retrieved": [
+        "4.2",
+        "4.4",
+        "7.1"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "hybrid",
+      "question": "posso parcelar em três vezes?",
+      "expected": [
+        "3",
+        "3.1"
+      ],
+      "retrieved": [
+        "3",
+        "3.1",
+        "4.3"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "hybrid",
+      "question": "qual o desconto no PIX?",
+      "expected": [
+        "3"
+      ],
+      "retrieved": [
+        "6.2",
+        "3",
+        "3.1"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "hybrid",
+      "question": "posso acumular PIX com preço promocional?",
+      "expected": [
+        "6.2"
+      ],
+      "retrieved": [
+        "6.2",
+        "3",
+        "3.1"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "hybrid",
+      "question": "qual o telefone de contato WhatsApp?",
+      "expected": [
+        "1.2",
+        "7"
+      ],
+      "retrieved": [
+        "1.2",
+        "7",
+        "9"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "hybrid",
+      "question": "qual o endereço da loja?",
+      "expected": [
+        "1.2"
+      ],
+      "retrieved": [
+        "1.2",
+        "7",
+        "9"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "hybrid",
+      "question": "qual o prazo do SEDEX para outras cidades?",
+      "expected": [
+        "5.2"
+      ],
+      "retrieved": [
+        "5.2",
+        "5.1",
+        "7.3"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "hybrid",
+      "question": "meu instrumento tem garantia do fabricante?",
+      "expected": [
+        "8.2"
+      ],
+      "retrieved": [
+        "8.2",
+        "8.3",
+        "4.2"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "hybrid",
+      "question": "vendem cabos e palhetas?",
+      "expected": [
+        "1",
+        "7.1"
+      ],
+      "retrieved": [
+        "8.3",
+        "1",
+        "7.1"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "hybrid",
+      "question": "desisti depois de receber a encomenda da internet",
+      "expected": [
+        "4.1"
+      ],
+      "retrieved": [
+        "4.4",
+        "4.1"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "hybrid",
+      "question": "paguei e quero meu dinheiro de volta",
+      "expected": [
+        "4.1"
+      ],
+      "retrieved": [
+        "6.1",
+        "4.1"
+      ],
+      "all_expected_in_top3": true
+    },
+    {
+      "mode": "hybrid",
+      "question": "meu teclado pifou logo que chegou",
+      "expected": [
+        "4.2"
+      ],
+      "retrieved": [],
+      "all_expected_in_top3": false
+    },
+    {
+      "mode": "hybrid",
+      "question": "posso dividir a compra em prestações?",
+      "expected": [
+        "3",
+        "3.1"
+      ],
+      "retrieved": [
+        "4.2",
+        "4.4"
+      ],
+      "all_expected_in_top3": false
+    }
+  ],
+  "limitations": "Small hand-authored development set; parameters were calibrated on these cases. Not a held-out benchmark or proof that retrieved text answers the question."
+}

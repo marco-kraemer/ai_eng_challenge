@@ -1,12 +1,18 @@
 """Bounded model/tool loop with an explicit read-only registry."""
 import csv
+import logging
 from typing import Any, Protocol
 from app.catalog import Catalog
+from app.policy_service import get_policy_index
 
 class Provider(Protocol):
     def generate(self, contents: list, tools: list) -> dict: ...
 
 TOOLS = [
+    {'name': 'search_policies',
+     'description': 'Buscar evidências no manual da loja: horários de funcionamento/abertura, contatos, endereço, pagamentos, parcelamento, PIX, trocas, devoluções, garantia, frete e políticas. Obrigatória antes de responder fatos ou regras da loja. Não consulta preços, estoque ou pedidos individuais.',
+     'parameters': {'type': 'object', 'properties': {
+         'query': {'type': 'string', 'description': 'Pergunta completa em português, preservando modalidade online/presencial, cidade e condições já informadas. Até 500 caracteres.'}}, 'required': ['query']}},
     {'name': 'search_catalog', 'description': 'Consultar produtos atuais com filtros e paginação.',
      'parameters': {'type': 'object', 'properties': {
          'category_id': {'type': 'integer'}, 'min_price': {'type': 'string'},
@@ -21,11 +27,29 @@ class Chat:
     def __init__(self, provider: Provider, catalog: Catalog):
         self.provider = provider
         self.catalog = catalog
+        self.products: dict[int, dict] = {}
+        self.sources: dict[str, dict] = {}
 
     def dispatch(self, name: str, args: dict) -> dict:
+        if name == 'search_policies':
+            if set(args) != {'query'} or not isinstance(args['query'], str) or not args['query'].strip() or len(args['query']) > 500:
+                return {'status': 'invalid', 'items': [], 'warnings': []}
+            try:
+                result = get_policy_index(self.catalog.directory).search(args['query'])
+                if result['status'] == 'found':
+                    for source in result['items']:
+                        self.sources[source['id']] = source
+                return result
+            except Exception as exc:
+                logging.getLogger(__name__).error('Policy retrieval failed (%s)', type(exc).__name__)
+                return {'status': 'error', 'items': [], 'warnings': []}
         if name == 'search_catalog':
             try:
-                return self.catalog.search(**args)
+                result = self.catalog.search(**args)
+                if result['status'] == 'found':
+                    for product in result['items']:
+                        self.products[product['product_id']] = product
+                return result
             except TypeError:
                 return {'status': 'invalid', 'items': []}
         if name == 'list_categories' and not args:

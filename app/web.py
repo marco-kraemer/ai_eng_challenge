@@ -3,7 +3,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 from app.catalog import Catalog
-from app.chat import Chat
+from app.assistant import StoreAssistant
 from app.openrouter import OpenRouter
 from dotenv import load_dotenv
 
@@ -21,7 +21,7 @@ def index():
 @app.post('/api/chat')
 def reply(message: Message):
     try:
-        return {'message': Chat(OpenRouter(), Catalog(ROOT / 'data')).reply(message.message)}
+        return StoreAssistant(OpenRouter(), Catalog(ROOT / 'data')).reply(message.message)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from None
     except RuntimeError:
