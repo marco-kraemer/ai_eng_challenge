@@ -139,7 +139,7 @@ def stream_reply(message: Message):
     import queue
     import threading
     import json
-    token, busy = acquire_chat(message)
+    ready: queue.Queue = queue.Queue(maxsize=1)
     events: queue.Queue = queue.Queue(maxsize=256)
     cancelled = threading.Event()
 
@@ -159,6 +159,14 @@ def stream_reply(message: Message):
             publish(event)
 
     def work():
+        # Redis lease/capacity ownership is thread-local. Acquire, persist and
+        # release in this worker; return preflight failures before SSE headers.
+        try:
+            token, busy = acquire_chat(message)
+        except Exception as error:
+            ready.put(error)
+            return
+        ready.put(token)
         terminal = None
         try:
             with event_sink(receive, cancelled):
@@ -178,9 +186,14 @@ def stream_reply(message: Message):
                     publish(terminal)
                 publish(None)
 
+    worker = threading.Thread(target=work, daemon=True)
+    worker.start()
+    preflight = ready.get()
+    if isinstance(preflight, Exception):
+        raise preflight
+    token = preflight
+
     async def output():
-        worker = threading.Thread(target=work, daemon=True)
-        worker.start()
         try:
             yield 'data: ' + json.dumps({'type': 'accepted', 'conversation_id': token}) + '\n\n'
             while True:

@@ -35,6 +35,31 @@ class SharedStateTests(unittest.TestCase):
         finally:
             lease.release()
 
+    def test_sse_keeps_redis_lease_and_capacity_on_the_execution_thread(self):
+        from fastapi.testclient import TestClient
+        from app.web import app
+        from app.redis_state import RedisCapacity
+        from app.limits import RateLimiter
+        capacity = RedisCapacity(self.redis, self.namespace, limit=1)
+        with patch('app.web.conversations', self.first), patch('app.web.chat_slots', capacity), patch('app.web.rate_limiter', RateLimiter()), patch('app.telemetry.export_runs'), TestClient(app) as client:
+            token = None
+            for _ in range(3):
+                response = client.post('/api/chat/stream', json={'message': 'Qual é o endereço da loja?', 'conversation_id': token})
+                self.assertEqual(response.status_code, 200)
+                events = [json.loads(line[6:]) for line in response.text.splitlines() if line.startswith('data: ')]
+                completed = [e for e in events if e['type'] == 'done']
+                self.assertEqual(len(completed), 1, events)
+                token = completed[0]['result']['conversation_id']
+                self.assertEqual(self.command('ZCARD', capacity.key), 0)
+            self.assertEqual(len(self.second.history(token)), 6)
+            busy = self.second.acquire(token)
+            try:
+                response = client.post('/api/chat/stream', json={'message': 'Olá', 'conversation_id': token})
+                self.assertEqual(response.status_code, 409)
+                self.assertIn('application/json', response.headers['content-type'])
+            finally:
+                busy.release()
+
     def test_context_crosses_instances_is_bounded_and_reset_does_not_resurrect(self):
         token = self.first.open(None)
         self.save(self.first, token, question='compra com cliente@example.test')
