@@ -19,7 +19,7 @@ with sync_playwright() as p:
         code,data=chat_replies.pop(0)
         if code==200:data['conversation_id']=route.request.post_data_json.get('conversation_id')
         route.fulfill(status=code,content_type='application/json',body=json.dumps(data))
-    page.route('**/api/chat',route_chat)
+    page.route('**/api/chat*',route_chat)
     page.goto('http://127.0.0.1:8000')
     assert page.get_by_role('heading',name='Como posso ajudar?').is_visible()
     assert page.locator('[data-intent]').count()==4

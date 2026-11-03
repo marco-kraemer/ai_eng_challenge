@@ -7,11 +7,11 @@ with sync_playwright() as p:
     page=browser.new_page(viewport={'width':390,'height':844})
     routes=[];errors=[]
     page.on('pageerror',lambda error:errors.append(str(error)))
-    page.route('**/api/chat',lambda route:routes.append(route))
+    page.route('**/api/chat*',lambda route:routes.append(route))
     page.goto('http://127.0.0.1:8000')
     def submit(text):
         page.locator('#message-input').fill(text)
-        with page.expect_request('**/api/chat'):
+        with page.expect_request('**/api/chat*'):
             page.locator('#message-form .send').click()
         page.locator('.typing-indicator').wait_for()
     def reply(route,message,status=200):
@@ -39,7 +39,7 @@ with sync_playwright() as p:
     reply(routes[-1],'Tente novamente mais tarde.',503)
     page.get_by_role('button',name='Tentar novamente',exact=True).wait_for()
     assert page.locator('.typing-indicator').count()==0
-    with page.expect_request('**/api/chat'):
+    with page.expect_request('**/api/chat*'):
         page.get_by_role('button',name='Tentar novamente',exact=True).click()
     page.locator('.typing-indicator').wait_for()
     reply(routes[-1],'Consulta concluída.')

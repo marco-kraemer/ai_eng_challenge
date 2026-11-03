@@ -1,0 +1,32 @@
+name: Live evaluation (paid, manual)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      OPEN_AI_KEY: ${{ secrets.OPEN_AI_KEY }}
+      LLM_PROVIDER: openai
+      OPENAI_MODEL: gpt-4.1-mini
+      EMPORIO_TRACING: 'false'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: python -m venv .venv
+      - run: .venv/bin/pip install -r requirements-dev.txt
+      - name: Verify key without printing it
+        run: test -n "$OPEN_AI_KEY"
+      - name: Bounded live journeys
+        run: .venv/bin/python scripts/evaluate_agent.py --live --budget-usd 0.50 --max-calls 60 --output evaluation.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: live-evaluation
+          path: evaluation.json
+          retention-days: 14

@@ -1,0 +1,45 @@
+name: Checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      redis:
+        image: redis:7-alpine
+        options: --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements*.txt
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - run: python -m venv .venv
+      - run: .venv/bin/pip install -r requirements-dev.txt
+      - name: Python and real Redis contracts
+        env:
+          REDIS_TEST_CONTAINER: ${{ job.services.redis.id }}
+          EMPORIO_TRACING: 'false'
+        run: .venv/bin/python -m unittest discover -s tests -v
+      - run: .venv/bin/mypy app --check-untyped-defs
+      - run: node tests/test_frontend.js
+      - run: node tests/test_stream_parser.js
+      - name: Browser without paid inference
+        run: |
+          .venv/bin/pip install playwright
+          .venv/bin/python -m playwright install --with-deps chromium
+          EMPORIO_TRACING=false PYTHONPATH=. .venv/bin/python tests/browser_category_scope.py
+          EMPORIO_TRACING=false PYTHONPATH=. .venv/bin/python tests/browser_stream_smoke.py
+

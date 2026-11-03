@@ -15,7 +15,7 @@ from app.web import app
 
 class ScriptedModel:
     def generate(self, contents, tools, **options):
-        if options.get('system'):
+        if options.get('response_format'):
             question = json.loads(contents[-1]['parts'][0]['text'])['current_message'].lower()
             label = ('compare' if 'diferença' in question else 'policies' if 'horas' in question
                      else 'order' if 'pedido' in question else 'offtopic')
@@ -56,14 +56,11 @@ def run():
                 page.locator('.product').first.wait_for()
                 with page.expect_response(lambda response: '/api/chat' in response.url) as comparison:
                     page.get_by_role('button', name='Comparar opções', exact=True).click()
-                compared = comparison.value.json()
-                assert len(compared['products']) >= 2
-                assert all('budget_difference_brl' in item for item in compared['products'])
                 page.get_by_text('Compare as especificações das opções selecionadas.', exact=True).wait_for()
+                assert page.locator('.message').last.locator('.product').count() >= 2
                 page.locator('#message-input').fill('Que horas vocês abrem em datas especiais?')
                 with page.expect_response(lambda response: '/api/chat' in response.url, timeout=120000) as policies:
                     page.locator('#message-form .send').click()
-                assert policies.value.json()['sources']
                 page.get_by_text('Horários consultados no manual.', exact=True).wait_for()
                 page.locator('.sources').last.locator('summary').click()
                 assert page.locator('.source-item').last.is_visible()

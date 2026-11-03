@@ -6,7 +6,7 @@ with sync_playwright() as p:
     page=browser.new_page(viewport={'width':1440,'height':1000}, reduced_motion='reduce')
     errors=[];model_requests=[]
     page.on('pageerror',lambda error:errors.append(str(error)))
-    page.route('**/api/chat',lambda route:(model_requests.append(route.request.url),route.abort()))
+    page.route('**/api/chat*',lambda route:(model_requests.append(route.request.url),route.abort()))
     page.goto('http://127.0.0.1:8000')
     categories=page.request.get('http://127.0.0.1:8000/api/categories').json()['categories']
     assert {c['category_id'] for c in categories}=={1,2,3,4,5,9}

@@ -283,6 +283,7 @@ function add(text, user = false, products = [], sources = [], actions = [], orde
     for (const product of products) {
       const card = element('article', 'product');
       card.append(element('div', 'product-top', product.stock_quantity > 0 ? 'Em estoque' : 'Sem estoque'), element('h3', '', product.name), element('p', 'description', product.description));
+      for (const warning of product.warnings || []) card.append(element('p', 'product-warning', warning));
       if (product.original_price_brl) {
         const original = element('div', 'original-price');
         original.append(element('del', '', money.format(Number(product.original_price_brl))), document.createTextNode(product.discount_percent + '% de desconto'));
@@ -392,12 +393,31 @@ async function requestReply(displayMessage, url, payload) {
   const currentGeneration = generation, controller = new AbortController(); activeRequest = controller;
   const timeout = setTimeout(() => controller.abort(), 120000);
   showMessages(); add(displayMessage, true); input.value = ''; setBusy(true);
-  const pending = showTyping();
+  let pending = showTyping(), provisional = null;
   status.textContent = 'Mensagem enviada. O assistente está preparando a resposta…'; form.setAttribute('aria-busy', 'true');
   try {
-    const response = await fetch(url, {method: 'POST', signal: controller.signal, headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...payload, conversation_id: conversationId})});
-    const data = await response.json(); if (currentGeneration !== generation) return;
-    pending.remove();
+    const target = url === '/api/chat' ? '/api/chat/stream' : url;
+    const response = await fetch(target, {method: 'POST', signal: controller.signal, headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...payload, conversation_id: conversationId})});
+    const streaming = response.headers?.get('content-type')?.includes('text/event-stream');
+    const data = streaming ? await EmporioStream.readSSE(response, event => {
+      if (currentGeneration !== generation) return;
+      if (event.type === 'accepted') conversationId = event.conversation_id;
+      else if (event.type === 'progress') {
+        status.textContent = event.label;
+        const label = pending.querySelector('.typing-text'); if (label) label.textContent = event.label;
+      } else if (event.type === 'delta' && typeof event.text === 'string') {
+        pending.remove();
+        if (!provisional) {
+          provisional = add(''); provisional.querySelector('.body').setAttribute('aria-live', 'off');
+        }
+        provisional.querySelector('.body').textContent += event.text; scroll();
+      } else if (event.type === 'answer_reset') {
+        if (provisional) provisional.remove(); provisional = null;
+        if (!pending.isConnected) pending = showTyping();
+      }
+    }) : await response.json();
+    if (currentGeneration !== generation) return;
+    pending.remove(); if (provisional) provisional.remove(); provisional = null;
     if (response.ok) {
       conversationId = data.conversation_id || conversationId;
       if (data.search) {selectedCategory = data.search; selectedBudget = data.search.max_price;}
@@ -409,10 +429,10 @@ async function requestReply(displayMessage, url, payload) {
     }
   } catch (error) {
     if (currentGeneration !== generation) return;
-    pending.remove();
-    showFailure(error.name === 'AbortError' ? 'A consulta demorou mais que o esperado. Tente novamente ou inicie outra conversa.' : 'Não conseguimos conectar. Confira sua conexão e tente novamente.', () => requestReply(displayMessage, url, payload));
+    pending.remove(); if (provisional) provisional.remove(); provisional = null;
+    showFailure(error.status ? error.message : error.name === 'AbortError' ? 'A consulta demorou mais que o esperado. Tente novamente ou inicie outra conversa.' : 'Não conseguimos conectar. Confira sua conexão e tente novamente.', () => requestReply(displayMessage, url, payload));
   } finally {
-    clearTimeout(timeout); pending.remove();
+    clearTimeout(timeout); pending.remove(); if (provisional) provisional.remove();
     if (currentGeneration === generation) {activeRequest = null; setBusy(false); status.textContent = ''; form.removeAttribute('aria-busy'); input.focus();}
   }
 }

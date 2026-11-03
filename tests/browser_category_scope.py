@@ -30,7 +30,7 @@ try:
         page = browser.new_page(viewport={'width': 390, 'height': 844}, reduced_motion='reduce')
         errors = []; model_requests = []
         page.on('pageerror', lambda error: errors.append(str(error)))
-        page.route('**/api/chat', lambda route: (model_requests.append(route.request.url), route.abort()))
+        page.route('**/api/chat*', lambda route: (model_requests.append(route.request.url), route.abort()))
         page.goto(base)
         page.locator('[data-intent=products]').click()
         page.get_by_role('button', name='Violões', exact=True).click()
@@ -69,6 +69,11 @@ try:
         page.locator('[data-intent=products]').click()
         page.get_by_role('button', name='Continuar', exact=True).wait_for()
         assert page.get_by_role('button', name='Continuar', exact=True).is_disabled()
+        page.get_by_role('button', name='Teclados e Pianos', exact=True).click()
+        page.get_by_role('button', name='Continuar', exact=True).click()
+        page.get_by_label('Valor máximo (R$)').fill('1200')
+        page.get_by_role('button', name='Ver instrumentos', exact=True).click()
+        page.get_by_text('A descrição informa 88 teclas', exact=False).wait_for(timeout=3000)
         browser.close()
     print('Browser OK: multiple categories, recovery, budget editing, all categories, reset and mobile; no LLM calls.')
 finally:
