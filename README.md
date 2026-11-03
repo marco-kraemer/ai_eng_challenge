@@ -10,6 +10,17 @@
 
 A loja é fictícia. Os CSVs e o manual são os dados de demonstração fornecidos no desafio. Divergências das fontes não representam condições comerciais reais.
 
+## Acessar ou executar
+
+| Quero… | Caminho |
+|---|---|
+| Testar sem instalar | [Abrir a demonstração pública](https://emporiomusica.vercel.app) |
+| Rodar com minha própria chave | [Baixar e executar localmente](#executar-localmente) |
+| Ler conversas completas | [Cinco conversas, incluindo tentativas de desvio](docs/exemplos-de-interacao.md) |
+| Examinar decisões e resultados | [Arquitetura](#como-funciona) · [Evidências](#evidência-e-custo) |
+
+**Disponibilidade da demo.** A demonstração hospedada utiliza crédito limitado e temporário da OpenAI para avaliação. A conversa gerada pode ficar indisponível após o esgotamento do crédito; não há compromisso de reposição contínua. Catálogo guiado, comparação, consulta de pedido e FAQ institucional dispensam chamadas ao modelo, mas continuam dependendo da disponibilidade da hospedagem e de seus serviços. A execução local é independente desse saldo e utiliza **sua própria chave e seu próprio crédito**.
+
 ## Experimente em três minutos
 
 1. Abra **Encontrar um instrumento**, selecione Violões e Ukuleles e consulte até R$ 600. Esse fluxo consulta os CSVs sem LLM.
@@ -22,7 +33,20 @@ Mensagens recebem confirmação imediata, progresso das consultas e texto transm
 
 ## Executar localmente
 
-Requisitos: Python 3.12, internet para instalar dependências e baixar o encoder no primeiro uso do RAG. Node 22 é usado apenas nos testes do frontend.
+Requisitos: **Python 3.12** e internet para instalar dependências, baixar o encoder no primeiro uso do RAG e acessar a OpenAI nas conversas geradas. Git é necessário apenas para clonar. Node 22 é usado nos testes do frontend, não para abrir a aplicação.
+
+### 1. Obter o projeto
+
+```bash
+git clone https://github.com/marco-kraemer/ai_eng_challenge.git
+cd ai_eng_challenge
+```
+
+Sem Git: abra o [repositório](https://github.com/marco-kraemer/ai_eng_challenge), escolha **Code → Download ZIP**, extraia o arquivo e abra o terminal na pasta que contém `README.md` e `requirements.txt`.
+
+### 2. Instalar e configurar
+
+**Linux, macOS ou Windows com WSL:**
 
 ```bash
 python3 -m venv .venv
@@ -30,7 +54,15 @@ python3 -m venv .venv
 cp -n .env.example .env
 ```
 
-Preencha o `.env` local, sem versioná-lo:
+**Windows com PowerShell:**
+
+```powershell
+py -3.12 -m venv .venv
+.venv\Scripts\python.exe -m pip install -r requirements.txt
+Copy-Item .env.example .env
+```
+
+Copie o arquivo de exemplo somente na primeira configuração, para preservar um `.env` já preenchido. Preencha o `.env` local com **sua chave**, sem versioná-lo:
 
 ```dotenv
 LLM_PROVIDER=openai
@@ -38,35 +70,84 @@ OPEN_AI_KEY=sua-chave
 OPENAI_MODEL=gpt-4.1-mini
 ```
 
+### 3. Iniciar o atendimento
+
+**Linux, macOS ou WSL:**
+
 ```bash
 .venv/bin/uvicorn app.web:app --host 127.0.0.1 --port 8000 --workers 1 --no-proxy-headers
 ```
 
-Abra **http://localhost:8000**. `OPENAI_API_KEY` também é aceita; `OPEN_AI_KEY` tem prioridade. Sem chave/cota, catálogo guiado, comparação, pedido e FAQ institucional continuam disponíveis. A conversa gerada precisa do provedor.
+**PowerShell:**
+
+```powershell
+.venv\Scripts\python.exe -m uvicorn app.web:app --host 127.0.0.1 --port 8000 --workers 1 --no-proxy-headers
+```
+
+Mantenha o terminal aberto e acesse **http://localhost:8000** no navegador. Use `Ctrl+C` para encerrar o servidor. `OPENAI_API_KEY` também é aceita; `OPEN_AI_KEY` tem prioridade. Sem chave/cota, catálogo guiado, comparação, pedido e FAQ institucional continuam disponíveis. A conversa gerada precisa do provedor.
 
 Upstash é opcional localmente e obrigatório na Vercel. LangSmith é opcional: configure `LANGSMITH_API_KEY` e `LANGSMITH_PROJECT=emporio-musica`. Os segredos ficam exclusivamente no servidor. Todas as variáveis estão em [.env.example](.env.example).
 
 ## Como funciona
 
+A aplicação usa dois caminhos: consultas guiadas executam regras determinísticas; mensagens livres passam pelo agente quando precisam de interpretação. O backend mantém os dados e as credenciais fora do navegador.
+
 ```mermaid
-flowchart TD
-    UI[Cliente · HTML/CSS/JavaScript] --> API[FastAPI · JSON / SSE]
-    API --> Guards[Validação · limites · lease de sessão]
-    Guards --> FAQ{FAQ institucional reconhecida?}
-    FAQ -- Sim --> Direct[PDF em cache · zero LLM]
-    FAQ -- Não --> Route[LangGraph · classificação e plano semântico]
-    Route --> Scope[Escopo da mensagem atual + contexto recente]
-    Scope --> Tools[LangChain · ferramentas validadas]
-    Tools --> CSV[Catálogo / promoções · filtros e Decimal]
-    Tools --> RAG[Manual · BM25 + E5 / cosseno + RRF]
-    Tools --> LLM[OpenAI · GPT-4.1 mini · resposta em streaming]
-    Direct --> Final[Resposta / cards / fontes · estado final]
-    LLM --> Final
-    Final --> UI
-    Guards <--> Redis[Upstash · contexto / leases / limites com TTL]
-    Route -. metadados sanitizados .-> Smith[LangSmith · etapas / tokens / custo / latência]
-    API --> Order[Formulário de pedido · número + e-mail · sem LLM]
+flowchart TB
+    UI["Cliente · interface web"] --> API["FastAPI · validação e limites"]
+    API --> Guided["Catálogo guiado, comparação e pedido"]
+    API --> FAQ{"FAQ institucional reconhecida?"}
+    Guided --> CSV[("CSVs da operação")]
+    FAQ -->|Sim| PDFCache["Informação extraída do PDF · sem LLM"]
+    FAQ -->|Não| Graph["LangGraph · intenção e contexto"]
+    Graph --> Scope{"Dentro do atendimento?"}
+    Scope -->|Não| Refuse["Recusa e retorno ao escopo da loja"]
+    Scope -->|Sim| Plan["Plano de consulta · ferramentas LangChain"]
+    Plan --> CSV
+    Plan --> RAG["Busca híbrida no manual"]
+    CSV --> Evidence["Resultados estruturados"]
+    RAG --> Evidence
+    Evidence --> Answer["GPT-4.1 mini · redação fundamentada"]
+    Answer --> SSE["Streaming SSE · texto, cards e fontes"]
+    PDFCache --> SSE
+    Refuse --> SSE
+    Guided --> UI
+    SSE --> UI
+    API <--> State[("Estado e limites · memória local ou Upstash")]
+    Graph -.-> Trace["LangSmith opcional · metadados sanitizados"]
+    classDef direct fill:#edf3e9,stroke:#55764e,color:#203c32;
+    classDef model fill:#fff3da,stroke:#a47b35,color:#493819;
+    class Guided,CSV,PDFCache direct;
+    class Graph,Plan,Answer model;
 ```
+
+O pedido usa número + e-mail em um formulário próprio e não passa pela LLM. Em mensagens livres, as rotas do grafo também tratam identidade, esclarecimentos e encaminhamento para esse formulário. O desenho resume os caminhos principais; o [grafo detalhado](docs/arquitetura-langgraph.md) descreve os contratos.
+
+### Da mensagem à resposta
+
+```mermaid
+sequenceDiagram
+    actor Cliente
+    participant Web as Interface
+    participant API as FastAPI e sessão
+    participant Agente as LangGraph e LLM
+    participant Fonte as CSV ou manual
+    Cliente->>Web: Pergunta sobre instrumentos ou políticas
+    Web->>API: POST /api/chat/stream + identificador da conversa
+    API->>API: Valida limites e adquire sessão
+    API-->>Web: Confirma recebimento por SSE
+    API->>Agente: Mensagem + histórico limitado + estado
+    Agente->>Fonte: Consulta com argumentos validados
+    Fonte-->>Agente: Dados e evidências
+    Agente-->>Web: Progresso e trechos de resposta via API/SSE
+    Agente-->>API: Resultado final estruturado
+    API->>API: Persiste contexto e libera sessão
+    API-->>Web: Evento final com cards, fontes e ações
+    Web-->>Cliente: Resposta completa e próximos passos
+```
+
+O fluxo acima representa um turno com consulta e geração. FAQ reconhecida e operações guiadas seguem caminhos diretos sem inferência paga.
+
 
 | Informação | Consulta escolhida | Por quê |
 |---|---|---|
@@ -82,7 +163,36 @@ flowchart TD
 
 **O RAG faz chunking.** O manual gera 26 chunks por seção, com limite de 1.800 caracteres e sem overlap. Embeddings E5 multilíngues locais, ONNX quantizado, 384 dimensões; matriz NumPy com cosseno, SQLite FTS5/BM25 e fusão RRF ponderada, top 3. Não há serviço vetorial externo: esse volume cabe em memória. Índice e embeddings são invalidados pelo hash do PDF. [Algoritmo, avaliação e falhas](docs/busca-politicas.md).
 
+### Como o manual vira evidência
+
+```mermaid
+flowchart LR
+    PDF["PDF original"] --> Sections["Seções e páginas · chunks"]
+    Sections --> Lexical["SQLite FTS5 · BM25"]
+    Sections --> Dense["E5 local · vetores normalizados"]
+    Q["Pergunta contextualizada"] --> Lexical
+    Q --> Dense
+    Lexical --> Fusion["Fusão RRF ponderada"]
+    Dense --> Fusion
+    Fusion --> Top["Top 3 trechos + páginas"]
+    Top --> Response["Contexto para resposta e fontes na interface"]
+```
+
 **Há três reaproveitamentos distintos:** FAQ institucional sem LLM; cache do índice/encoder do RAG por instância; tokens de prompt em cache informados pela OpenAI. Não há cache semântico de respostas geradas nem cache de preço/estoque. Dados comerciais são relidos.
+
+## Conversas completas
+
+Os [cinco exemplos de interação](docs/exemplos-de-interacao.md) mostram conversas contínuas com respostas reais, entre duas e cinco mensagens do cliente por sessão:
+
+| Exemplo | O que demonstra |
+|---|---|
+| Escolha de instrumentos · 3 mensagens | Restringir categorias e ampliar orçamento preservando o contexto |
+| Devolução · 3 mensagens | Esclarecer modalidade da compra e aplicar a política de frete |
+| Parcelamento · 2 mensagens | Explicitar divergências do manual diante de pressão por garantia |
+| Informações da loja · 2 mensagens | Consultar endereço e horário na mesma conversa |
+| Tentativas de desvio · 5 mensagens | Recusar script Python, bicicleta, pedido de segredo e mudança de papel; retomar a identidade |
+
+As transcrições preservam as imperfeições observadas, inclusive uma oferta de contato que o agente não consegue executar. O [JSON da rodada](docs/conversas-multiturno.json) registra respostas, filtros e fontes. Essa coleta é separada da avaliação de 26 contratos apresentada abaixo.
 
 ## Evidência e custo
 
