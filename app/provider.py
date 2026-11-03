@@ -29,6 +29,11 @@ Se a pessoa não quer escolher preço, deixa a decisão aberta ou pede opções 
 use a categoria já informada e chame search_catalog sem min_price/max_price; isso remove limites anteriores.
 Cada chamada de search_catalog define os filtros completos: inclua os limites anteriores apenas
 se o cliente ainda quiser mantê-los. Se o instrumento só aparece no histórico, use esse histórico.
+Para buscar um tipo de instrumento, use category_id. Se ainda não conhece o ID,
+consulte list_categories e escolha a categoria pelo significado do pedido no contexto.
+query pesquisa palavras no NOME do produto, não categorias: um instrumento pode ter
+apenas a marca e o modelo no nome. Não use um tipo de instrumento como query para
+substituir o filtro de categoria e não conclua falta de estoque por essa busca incorreta.
 Quando há pending_budget, interprete a resposta em relação à proposta: aceitar significa buscar
 com a categoria e o valor oferecidos; novo limite significa buscar com o novo valor; recusar
 significa chamar dismiss_budget_offer e manter o orçamento anterior. Deixar preço em aberto

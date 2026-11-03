@@ -28,12 +28,12 @@ TOOLS = [
          'query': {'type': 'string', 'description': 'Pergunta completa em português, preservando modalidade online/presencial, cidade e condições já informadas. Até 500 caracteres.'}}, 'required': ['query']}},
     {'name': 'search_catalog', 'description': 'Consultar produtos atuais por nome, marca ou modelo (query) e filtros estruturados. Cada consulta define TODOS os filtros atuais: omitir min_price/max_price significa buscar SEM limite de preço e remover limites anteriores. Orçamento é opcional. Interprete o pedido com o histórico: se a pessoa não quer definir preço, consulte o instrumento já mencionado sem limites. Se aceitar uma oferta de orçamento pendente, use a categoria e o valor dessa oferta; se mudar de ideia, use a nova intenção. Ao citar um modelo específico, use query. Só informe produtos encontrados.',
      'parameters': {'type': 'object', 'properties': {
-         'query': {'type': 'string', 'minLength': 1, 'maxLength': 200, 'description': 'Nome, marca ou modelo, por exemplo Takamine GD20; não a pergunta inteira.'},
-         'category_id': {'type': 'integer'}, 'min_price': {'type': 'string'},
+         'query': {'type': 'string', 'minLength': 1, 'maxLength': 200, 'description': 'Palavras do nome, marca ou modelo específico, por exemplo Takamine GD20. Não usar para tipo de instrumento: use category_id para categorias.'},
+         'category_id': {'type': 'integer', 'description': 'ID da categoria de instrumento. Consulte list_categories se o ID ainda não foi informado pelas ferramentas ou pelo contexto; não adivinhe.'}, 'min_price': {'type': 'string'},
          'max_price': {'type': 'string'}, 'in_stock': {'type': 'boolean'},
          'status': {'type': 'string', 'enum': ['active', 'inactive']},
          'limit': {'type': 'integer'}, 'offset': {'type': 'integer'}}}},
-    {'name': 'list_categories', 'description': 'Listar categorias e seus identificadores.',
+    {'name': 'list_categories', 'description': 'Consultar categorias de instrumentos e seus IDs reais. Use antes de search_catalog quando o cliente indica um tipo de instrumento e você ainda não conhece o category_id. Escolha a categoria pelo significado do pedido, inclusive no histórico.',
      'parameters': {'type': 'object', 'properties': {}}},
 ]
 

@@ -1,0 +1,133 @@
+{
+  "date": "2026-11-03",
+  "provider": "OpenAI direct API",
+  "model": "gpt-4.1-mini",
+  "resolved_model": "gpt-4.1-mini-2025-04-14",
+  "mode": "live provider, real catalog, seeded conversation history and state",
+  "baseline_passed": 2,
+  "total": 4,
+  "passed": 4,
+  "change": "Clarify category_id versus product-name query; discover category IDs through list_categories, without phrase mapping.",
+  "limitations": [
+    "Single run per case; not a statistical benchmark or full HTTP multi-turn evaluation.",
+    "Evaluates filters, tools, proposal state and product category; does not score every generated claim or persona.",
+    "Broader ticket 14 acceptance criteria remain pending."
+  ],
+  "cases": [
+    {
+      "case": "tanto-faz",
+      "passed": true,
+      "seconds": 4.95,
+      "classification": [
+        [
+          "store"
+        ]
+      ],
+      "tools": [
+        {
+          "name": "list_categories",
+          "args": {}
+        },
+        {
+          "name": "search_catalog",
+          "args": {
+            "category_id": 5,
+            "in_stock": true,
+            "limit": 4
+          }
+        }
+      ],
+      "message": "Tenho quatro opções boas para quem está começando. O Yamaha C40 é clássico, com tampo em Spruce e muito indicado para estudantes, tem som agradável para iniciante e preço acessível. O Tagima Memphis AC-39 é o mais barato e tem corpo leve, bom para conforto ao tocar. O Giannini GN-15 tem tampo em cedro e oferece um som um pouco mais encorpado, ótimo custo-benefício para quem já pratica um pouco mais. Já o Yamaha C70 tem tampo sólido, acabamento mais caprichado e som mais equilibrado, para nível intermediário. Quer que eu foque em alguma dessas características?",
+      "product_count": 4,
+      "preferences": {
+        "category_id": 5,
+        "in_stock": true,
+        "status": "active"
+      }
+    },
+    {
+      "case": "free-wording",
+      "passed": true,
+      "seconds": 4.57,
+      "classification": [
+        [
+          "store"
+        ]
+      ],
+      "tools": [
+        {
+          "name": "list_categories",
+          "args": {}
+        },
+        {
+          "name": "search_catalog",
+          "args": {
+            "category_id": 5,
+            "limit": 4
+          }
+        }
+      ],
+      "message": "Tenho aqui quatro opções de violão clássico, bem indicados para iniciantes como você. Por exemplo, o Yamaha C40 tem tampo de spruce, que é uma madeira comum para boa projeção sonora. O Tagima Memphis é mais acessível e leve, bom para longas sessões de estudo. O Giannini GN-15 traz um tampo em cedro, que dá um som mais encorpado. O Yamaha C70 é um pouco mais refinado, com tampo sólido de spruce, indicado para quem quer algo mais durável e equilibrado.\n\nQuer detalhes sobre algum modelo ou prefere que eu mostre outras opções?",
+      "product_count": 4,
+      "preferences": {
+        "category_id": 5,
+        "in_stock": true,
+        "status": "active"
+      }
+    },
+    {
+      "case": "accept-offer",
+      "passed": true,
+      "seconds": 4.02,
+      "classification": [
+        [
+          "store"
+        ]
+      ],
+      "tools": [
+        {
+          "name": "search_catalog",
+          "args": {
+            "category_id": 2,
+            "max_price": "7157.00",
+            "in_stock": true,
+            "status": "active",
+            "limit": 4
+          }
+        }
+      ],
+      "message": "Tenho um contrabaixo Music Man Bass 4X elétrico por R$ 7.157,00. Ele tem corpo de ash (freixo), braço de maple (bordo) e 4 cordas, com captador humbucker na ponte, indicado para rock e metal pelo ataque e definição. Quer saber mais detalhes ou outra coisa?",
+      "product_count": 1,
+      "preferences": {
+        "category_id": 2,
+        "in_stock": true,
+        "status": "active",
+        "max_price": "7157.00"
+      }
+    },
+    {
+      "case": "reject-offer",
+      "passed": true,
+      "seconds": 3.07,
+      "classification": [
+        [
+          "store"
+        ]
+      ],
+      "tools": [
+        {
+          "name": "dismiss_budget_offer",
+          "args": {}
+        }
+      ],
+      "message": "Beleza, vou manter a busca até R$ 500. Só que não tem baixos nessa faixa em estoque. Posso ajudar com outro instrumento ou faixa de preço?",
+      "product_count": 0,
+      "preferences": {
+        "category_id": 2,
+        "in_stock": true,
+        "status": "active",
+        "max_price": "500.00"
+      }
+    }
+  ]
+}
