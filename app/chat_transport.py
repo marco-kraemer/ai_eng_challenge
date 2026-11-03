@@ -22,7 +22,7 @@ class ChatCompletionsTransport:
         return {'model': self.model, 'messages': messages,
                 **({'tools': [{'type': 'function', 'function': tool} for tool in tools]} if tools else {})}
 
-    def generate(self, contents, tools, *, system=SYSTEM):
+    def generate(self, contents, tools, *, system=SYSTEM, response_format=None):
         self.validate()
         messages: list[dict[str, Any]] = [{'role': 'system', 'content': system}]
         pending_ids: list[str] = []
@@ -43,9 +43,12 @@ class ChatCompletionsTransport:
         try:
             for attempt in range(2):
                 try:
+                    body = self.request_body(messages, tools)
+                    if response_format is not None:
+                        body['response_format'] = response_format
                     response = httpx.post(self.endpoint,
                         headers={'Authorization': f'Bearer {self.api_key}'},
-                        json=self.request_body(messages, tools), timeout=60)
+                        json=body, timeout=60)
                     if response.status_code==429:
                         logging.getLogger(type(self).__module__).warning('%s request failed (429)', self.provider_name)
                         raise RuntimeError('Limite de uso do modelo atingido. Aguarde e tente mais tarde.')

@@ -15,7 +15,7 @@ from app.conversations import ConversationStore
 class ScenarioModel:
     def generate(self, contents, tools, **options):
         if options.get('system'):
-            question=contents[-1]['parts'][0]['text'].lower()
+            question=json.loads(contents[-1]['parts'][0]['text'])['current_message'].lower()
             label=('offtopic' if 'python' in question else 'policies' if 'horas' in question
                    else 'identity' if 'nome' in question else 'order' if 'pedido' in question
                    else 'compare' if 'diferença' in question else 'store')

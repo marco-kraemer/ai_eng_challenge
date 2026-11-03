@@ -36,6 +36,7 @@ class GraphProductTests(unittest.TestCase):
             {'parts': [{'text': 'Preciso de uma categoria válida.'}]},
         ]
         catalog = Mock()
+        catalog.categories.return_value = {'status': 'found', 'items': []}
         chat = Chat(provider, catalog)
         chat.reply('Quero um instrumento')
         catalog.search.assert_not_called()

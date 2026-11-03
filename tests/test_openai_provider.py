@@ -83,4 +83,4 @@ class OpenAIProviderTests(unittest.TestCase):
         self.assertEqual(result.status_code, 200)
         self.assertIn('Tom', result.json()['message'])
         self.assertEqual(post.call_args.args[0], provider.endpoint)
-
+        self.assertEqual(post.call_args.kwargs['json']['response_format']['type'], 'json_schema')

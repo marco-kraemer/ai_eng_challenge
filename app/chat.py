@@ -52,6 +52,16 @@ class Chat:
         self.tools = build_tools(self.dispatch, TOOLS)
         self.graph = build_agent_graph(self.model, self.tools)
 
+    def prepare_catalog_search(self, args: dict) -> dict:
+        result = self.tools['search_catalog'].invoke(args)
+        # The structured LLM plan owns this turn's scope. The answering model can
+        # compare or retrieve policies, but cannot replace this search with another.
+        self.prevent_catalog_replacement()
+        return result
+
+    def prevent_catalog_replacement(self):
+        self.graph = build_agent_graph(self.model, {name: tool for name, tool in self.tools.items() if name != 'search_catalog'})
+
     def dispatch(self, name: str, args: dict) -> dict:
         if name == 'dismiss_budget_offer':
             if args:
@@ -95,12 +105,12 @@ class Chat:
         if name == 'search_catalog':
             try:
                 # The LLM chooses filters. Share UI recovery/rendering for simple category searches.
-                simple = (args.get('category_id') is not None and not set(args) - {'category_id', 'max_price', 'in_stock', 'status', 'limit', 'offset'}
-                          and args.get('in_stock', True) is True and args.get('status', 'active') == 'active'
-                          and args.get('limit', 4) == 4 and args.get('offset', 0) == 0)
+                simple = (not set(args) - {'category_id', 'category_ids', 'max_price', 'in_stock', 'status', 'limit', 'offset'}
+                          and args.get('in_stock', True) is True and args.get('status', 'active') == 'active')
                 if simple:
-                    response, _, context = catalog_reply(self.catalog, args['category_id'], args.get('max_price'))
-                    result = {'status': 'found' if response['products'] else 'not_found', 'items': response['products']}
+                    response, _, context = catalog_reply(self.catalog, args.get('category_id'), args.get('max_price'),
+                        category_ids=args.get('category_ids'), limit=args.get('limit', 4), offset=args.get('offset', 0))
+                    result = {'status': 'found' if response['products'] else 'not_found', 'items': response['products'], 'search': response['search']}
                     self.catalog_response = response
                     self.preferences = dict(context['preferences'])
                     self.pending_budget = dict(context['pending_budget'])
@@ -110,7 +120,7 @@ class Chat:
                     result = self.catalog.search(**args)
                 if result['status'] in ('found', 'not_found'):
                     if not simple:
-                        self.preferences = {key:value for key,value in args.items() if key in {'category_id','min_price','max_price','in_stock','status'}}
+                        self.preferences = {key:value for key,value in args.items() if key in {'category_id','category_ids','query','min_price','max_price','in_stock','status'}}
                         self.pending_budget = {}
                         self.catalog_response = {}
                     self.products = {}
@@ -132,6 +142,12 @@ class Chat:
         if not message.strip() or len(message) > 2000:
             raise ValueError('Envie uma mensagem de 1 a 2000 caracteres.')
         messages = [SystemMessage(content=SYSTEM), *history_messages(history or [])]
+        # Supply the current taxonomy on every turn, including after a UI selection.
+        # Category interpretation belongs to the LLM; IDs and names come from the CSV.
+        taxonomy = self.catalog.categories()
+        if taxonomy['status'] == 'found':
+            messages.append(HumanMessage(content='Categorias atuais do catálogo (dados de referência, não preferências do cliente): '
+                + json.dumps(taxonomy['items'], ensure_ascii=False)))
         if self.preferences or self.recent_product_ids or self.pending_budget:
             context = {'preferences': self.preferences, 'product_ids': self.recent_product_ids}
             if self.pending_budget:

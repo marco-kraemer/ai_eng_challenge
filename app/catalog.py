@@ -19,7 +19,7 @@ class Catalog:
     def __init__(self, directory: Path):
         self.directory = directory
 
-    def search(self, *, category_id=None, min_price='0', max_price=None,
+    def search(self, *, category_id=None, category_ids=None, min_price='0', max_price=None,
                in_stock=True, status='active', limit=5, offset=0, query=None):
         try:
             if query is not None and (not isinstance(query, str) or not 1 <= len(query) <= 200 or not name_tokens(query)):
@@ -32,7 +32,10 @@ class Catalog:
                 type(limit) is not int or not 1 <= limit <= 10 or
                 type(offset) is not int or offset < 0 or
                 type(in_stock) is not bool or
-                category_id is not None and type(category_id) is not int):
+                category_id is not None and (type(category_id) is not int or category_id <= 0) or
+                category_ids is not None and (not isinstance(category_ids, list) or len(category_ids) > 9 or
+                    any(type(i) is not int or i <= 0 for i in category_ids) or len(set(category_ids)) != len(category_ids)) or
+                category_id is not None and category_ids is not None):
                 raise ValueError('Invalid filters')
         except (InvalidOperation, ValueError, TypeError):
             return {'status': 'invalid', 'items': []}
@@ -45,6 +48,7 @@ class Catalog:
                     category = int(row['category_id'])
                     if (not terms.issubset(name_tokens(row['name'])) or price < low or high is not None and price > high or
                         category_id is not None and category != category_id or
+                        category_ids and category not in category_ids or
                         in_stock and stock <= 0 or row['status'] != status):
                         continue
                     matches.append({
@@ -54,6 +58,13 @@ class Catalog:
                         'status': row['status'], 'description': row['description'],
                         'specs': json.loads(row['specs']),
                     })
+            # Broad searches show a representative mix; paginate only after filtering.
+            if category_id is None and not terms:
+                groups: dict[int, list] = {}
+                for product in matches:
+                    groups.setdefault(product['category_id'], []).append(product)
+                matches = [group[position] for position in range(max((len(g) for g in groups.values()), default=0))
+                           for group in groups.values() if position < len(group)]
             items = matches[offset:offset + limit]
             return {'status': 'found' if items else 'not_found', 'items': items,
                     'next_offset': offset + limit if offset + limit < len(matches) else None}
@@ -109,12 +120,12 @@ class Catalog:
         except (OSError, ValueError, KeyError):
             return {'status': 'error', 'items': []}
 
-    def cheapest_available(self, category_id: int) -> dict:
+    def cheapest_available(self, category_id: int | None = None, *, category_ids: list[int] | None = None) -> dict:
         """Consider every matching row, including products beyond the first page."""
         offset = 0
         cheapest = None
         while True:
-            page = self.search(category_id=category_id, limit=10, offset=offset)
+            page = self.search(category_id=category_id, category_ids=category_ids, limit=10, offset=offset)
             if page['status'] in ('error', 'invalid'):
                 return page
             for product in page['items']:

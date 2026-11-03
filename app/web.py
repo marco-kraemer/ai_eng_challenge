@@ -4,7 +4,7 @@ import ipaddress
 import os
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, Response, JSONResponse, FileResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from app.catalog import Catalog
 from app.catalog_flow import catalog_reply, INSTRUMENT_ART, CATEGORY_LABELS
 from app.orders import Orders
@@ -147,9 +147,19 @@ def category_options():
     return {'categories':[dict(item,label=CATEGORY_LABELS.get(item['category_id'],item['name']),illustration='/assets/instruments.svg#'+INSTRUMENT_ART.get(item['category_id'],'generico')) for item in items]}
 
 class CatalogSelection(BaseModel):
-    category_id: int = Field(gt=0,strict=True)
+    model_config = ConfigDict(extra='forbid')
+    category_id: int | None = Field(default=None,gt=0,strict=True)
+    category_ids: list[Annotated[int, Field(strict=True, gt=0)]] | None = Field(default=None,max_length=9)
     max_price: str | None = Field(default=None,max_length=32)
     conversation_id: str | None = Field(default=None,max_length=64)
+
+    @model_validator(mode='after')
+    def unique_scope(self):
+        if self.category_id is not None and self.category_ids is not None:
+            raise ValueError('Escolha uma categoria ou uma lista de categorias.')
+        if self.category_ids is not None and len(set(self.category_ids)) != len(self.category_ids):
+            raise ValueError('Escolha cada categoria apenas uma vez.')
+        return self
 
 @app.post('/api/catalog/search')
 def selected_catalog(selection: CatalogSelection):
@@ -157,7 +167,7 @@ def selected_catalog(selection: CatalogSelection):
     busy=conversations.acquire(token)
     if busy is None:raise HTTPException(409,'Aguarde a consulta anterior ou inicie uma nova conversa.')
     try:
-        response,question,state=catalog_reply(Catalog(ROOT/'data'),selection.category_id,selection.max_price)
+        response,question,state=catalog_reply(Catalog(ROOT/'data'),selection.category_id,selection.max_price,category_ids=selection.category_ids)
         response['conversation_id']=token
         conversations.append(token,question,response['message'],state)
         return response

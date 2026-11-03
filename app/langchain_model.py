@@ -72,6 +72,8 @@ class StoreChatModel(BaseChatModel):
             raise RuntimeError('Limite de contexto atingido. Inicie outro assunto.')
         # Do not send system prompts as user messages; retain the existing transport contract.
         options = {'system': system} if system != SYSTEM else {}
+        if kwargs.get('response_format') is not None:
+            options['response_format'] = kwargs['response_format']
         response = self.transport.generate(contents, kwargs.get('tools', []), **options)
         native = response.get('_openrouter_message', {})
         native_calls = native.get('tool_calls', [])

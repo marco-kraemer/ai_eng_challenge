@@ -29,6 +29,7 @@ class GraphLimitTests(unittest.TestCase):
         provider = Mock()
         provider.generate.return_value = {'parts': [{'functionCall': {'name': 'search_catalog', 'args': {}}}] * 4}
         catalog = Mock()
+        catalog.categories.return_value = {'status': 'found', 'items': []}
         with self.assertRaisesRegex(RuntimeError, 'Limite de consultas'):
             Chat(provider, catalog).reply('Quero instrumentos')
         catalog.search.assert_not_called()
