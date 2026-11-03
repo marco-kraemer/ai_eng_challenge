@@ -1,92 +1,72 @@
-# Publicar a Empório da Música na Vercel
+# Deploy na Vercel
 
-A aplicação está preparada para o runtime Python/FastAPI da Vercel. A interface e as APIs continuam na mesma origem. Esta preparação não cria um projeto na plataforma nem publica uma URL.
+**Demo:** https://emporiomusica.vercel.app · **Repositório:** https://github.com/marco-kraemer/ai_eng_challenge
 
-## Configuração incluída
+GitHub `main` está conectado ao projeto existente `emporio_musica`. Um push cria deployment de produção automaticamente. A interface e as APIs FastAPI usam a mesma origem. O deploy de código `185dfcc` ficou Ready em 2026-11-03, com função de 145,89 MB. [Verificação HTTPS de produção](verificacao-producao.json).
 
-- `app/index.py` exporta a aplicação FastAPI; o uso local continua sendo `app.web:app`.
-- `.python-version` fixa Python 3.12.
-- `vercel.json` seleciona FastAPI, executa a preparação do RAG e define até 300 segundos por requisição. Dados, assets e modelo local entram no pacote; arquivos de desenvolvimento e `.env` ficam de fora.
-- `.vercelignore` evita enviar segredos e caches locais. `.rag-bundle` é gerado novamente no build.
-- `requirements.txt` contém dependências de execução; `requirements-dev.txt` acrescenta as de testes e tipagem.
+## Configuração
 
-## 1. Criar os serviços e configurar variáveis
+Importar o repositório com Root Directory na raiz, preset **FastAPI**, Python 3.12 e Build Command definido em `vercel.json`: `python scripts/prepare_vercel.py`. O entrypoint é `app/index.py`. Fluid Compute e 2 GB de memória são a configuração usada; duração máxima de função de 300 segundos.
 
-Importe o repositório no painel da Vercel, com a raiz do projeto como Root Directory. Selecione o preset **FastAPI** e mantenha o Build Command de `vercel.json`. Com Fluid Compute, configure **2 GB de memória no painel**, sem definir `memory` em `vercel.json`.
+Em **Settings → Environment Variables**, configurar para Production e Preview:
 
-Crie ou conecte um banco **Upstash Redis**, pelo Marketplace da Vercel ou pelo painel da Upstash. Configure no projeto, em Production e no ambiente Preview que for usar:
-
-| Variável | Valor |
+| Variável | Conteúdo |
 |---|---|
 | `LLM_PROVIDER` | `openai` |
-| `OPEN_AI_KEY` | Chave da API OpenAI, como segredo no painel (`OPENAI_API_KEY` também é aceita) |
+| `OPEN_AI_KEY` | Chave secreta OpenAI; `OPENAI_API_KEY` também aceita |
 | `OPENAI_MODEL` | `gpt-4.1-mini` |
-| `UPSTASH_REDIS_REST_URL` | Endpoint HTTPS REST da Upstash |
-| `UPSTASH_REDIS_REST_TOKEN` | Token REST com leitura e escrita; não usar o token somente de leitura |
-| `VERCEL_SUPPORT_LARGE_FUNCTIONS` | `1`; habilitar no ambiente do build (Production e Preview). Necessário para este backend com ONNX/NumPy, em projetos elegíveis |
+| `UPSTASH_REDIS_REST_URL` | Endpoint REST HTTPS do banco Upstash |
+| `UPSTASH_REDIS_REST_TOKEN` | Token REST com leitura **e escrita**, como segredo |
+| `VERCEL_SUPPORT_LARGE_FUNCTIONS` | `1`, para o empacotamento usado por este backend ONNX/NumPy |
+| `LANGSMITH_API_KEY` | Opcional; chave secreta de observabilidade |
+| `LANGSMITH_PROJECT` | `emporio-musica` |
+| `EMPORIO_TRACING` | `true` para exportar traces sanitizados; `false` para desabilitar |
+| `LANGSMITH_WORKSPACE_ID` | Opcional, quando exigido pela chave |
 
-`VERCEL`, `VERCEL_ENV` e as variáveis Git são fornecidas pela plataforma. Não copie o arquivo `.env` para o deploy. `POLICY_CACHE_DIR` não precisa ser configurado: na Vercel, o padrão é `/tmp/emporio-policy-cache`.
+`VERCEL`, `VERCEL_ENV` e metadados Git são fornecidos pela plataforma. Não enviar `.env`, copiar segredos para o frontend ou usar `NEXT_PUBLIC_*` para essas chaves. Mudança de variável exige **novo deployment** para afetar os processos. Produção e Preview devem usar namespaces separados de estado; `STATE_NAMESPACE` só é necessário para substituir o padrão.
 
-O estado usa um namespace separado para produção e para cada branch de preview. `STATE_NAMESPACE` é uma substituição opcional, com até 80 letras, números, hífens ou sublinhados. Não use o mesmo namespace para ambientes que precisam ficar isolados. Escolha regiões próximas para a função e o Redis.
+Para obter as duas variáveis Upstash: abra o banco no painel, localize **REST API**, copie a URL e o token REST padrão de leitura/escrita. Não use host/porta do protocolo Redis nem o token somente leitura. Salve no painel da Vercel e faça redeploy. O backend falha com 503 se Redis estiver indisponível; não muda silenciosamente para estado local.
 
-Credenciais Redis são obrigatórias na Vercel. A aplicação recusa configuração incompleta; não volta silenciosamente para conversas locais, o que perderia contexto entre instâncias. Sem Redis configurado, a execução local continua usando memória como antes.
+A URL de produção precisa estar acessível sem login Vercel. Preview pode continuar protegido. CI verde é uma verificação separada do deploy: a integração Git dispara o build, não espera automaticamente o workflow `Checks`.
 
-## 2. O que acontece no build e na execução
+## Build e cache
 
-O build baixa somente os arquivos necessários do modelo ONNX quantizado, com revisão fixada, gera embeddings dos trechos do PDF e grava `.rag-bundle`. O cache de download fica em um diretório temporário fora do projeto e é removido antes do empacotamento; somente a cópia final do modelo entra na função. Não chama a LLM nem acessa o Redis. O download público do modelo precisa estar disponível durante o build.
+O build baixa o encoder E5 ONNX quantizado com revisão fixada, gera embeddings dos 26 chunks do PDF e grava `.rag-bundle`. Não chama LLM nem Redis. O download temporário fica fora do projeto e é removido antes do empacotamento. `.vercelignore` e `excludeFiles` excluem segredos, testes, documentação e caches intermediários.
 
-Na primeira consulta RAG de uma instância, o pacote é copiado para `/tmp`, que é gravável. O modelo é carregado com arquivos locais, sem download em execução. O índice e o encoder são reutilizados enquanto aquela instância estiver ativa. Instâncias novas repetem a inicialização; o cache em memória não é global. Alterações no PDF invalidam os vetores por hash.
+Na primeira consulta RAG de uma instância, o pacote é copiado para `/tmp/emporio-policy-cache`. Não há download do modelo em execução. Índice/encoder são reutilizados nessa instância; não são um cache global entre funções. O hash do PDF invalida vetores antigos. FAQ institucional reconhecida não carrega o encoder.
 
-As conversas, propostas de orçamento e filtros ficam no Redis, com TTL de 15 minutos e histórico limitado a 12 mensagens/8.000 caracteres. E-mails continuam removidos do histórico. Reiniciar elimina a conversa; bloqueios com proprietário e prazo impedem uma resposta atrasada de restaurá-la. Há até 100 sessões ativas por namespace; quando esse limite é atingido, novas sessões recebem indisponibilidade até liberar espaço.
+O erro histórico `LAMBDA_SIZE_EXCEEDED` vinha da inclusão de caches auxiliares gerados dentro do projeto. A preparação foi corrigida; o último build observado tem 145,89 MB. O tamanho depende das dependências e deve ser conferido a cada alteração relevante. `VERCEL_SUPPORT_LARGE_FUNCTIONS` é uma opção do empacotador usada por esta configuração; não é requisito universal de projetos Vercel.
 
-Limites de consultas e as quatro vagas simultâneas de geração também são compartilhados. Bloqueios expiram em 330 segundos, acima dos 300 segundos máximos da função; se alterar essa duração, ajuste o prazo dos bloqueios. Falha do Redis retorna 503 antes de continuar sem proteção. As rotas não devem ser usadas como acesso direto a dados do Redis.
+## Estado compartilhado e streaming
 
-O endereço do visitante é obtido dos headers sobrescritos pela Vercel apenas quando `VERCEL=1`. Fora desse ambiente, headers enviados pelo cliente não substituem o endereço da conexão. A chave do limitador é armazenada como hash.
+Upstash guarda até 100 sessões por namespace, TTL de 15 minutos e histórico de até 12 mensagens/8.000 caracteres. Preferências, IDs e proposta pendente são estruturados; e-mails são removidos do histórico. Reset exclui a sessão, e escrita com lease/proprietário impede ressuscitar estado antigo.
 
-## 3. Verificações antes de enviar o link
+Limites de IP e quatro vagas simultâneas são compartilhados. Leases de 330 segundos excedem a função de 300 segundos. Se alterar a duração da função, revisar essa relação. A aplicação confia nos headers substituídos pela Vercel somente quando `VERCEL=1`; localmente, usar `--no-proxy-headers`.
 
-1. Conferir o build: assets do RAG presentes e tamanho final da função aceito pela plataforma. O tamanho exato depende das dependências empacotadas; a preparação local não substitui o build da Vercel.
-2. Abrir `/api/health`: deve retornar `{"status":"ok"}`. Essa rota verifica o processo, não a disponibilidade do Redis ou da LLM.
-3. Abrir a página, buscar um instrumento sem orçamento e consultar endereço/horários. Esses fluxos não precisam da LLM, mas as operações de sessão usam Redis.
-4. Continuar uma conversa, reiniciar e confirmar que o contexto anterior não reaparece. Confirmar a operação em produção após novos processos/inicializações.
-5. Consultar pedido de demonstração, comparar produtos e abrir uma pergunta que exija o manual.
-6. Com cota disponível, executar os testes de linguagem e personalidade do ticket 14. Hospedagem não resolve limites ou saldo da API de inferência.
-7. Configurar o acesso da URL de produção para que o avaliador não precise entrar na sua conta Vercel; testar em janela anônima. Pré-visualizações podem ter proteção de acesso.
+O frontend usa `POST /api/chat/stream` e SSE; `/api/chat` continua JSON para integração/teste. HTTP 200 inicia o stream, mas falhas posteriores vêm em evento `error`: consumidores precisam ler até `done` ou `error`. Eventos de progresso não contêm raciocínio, prompts ou argumentos. Interrupção remove texto parcial; uma chamada já iniciada pode continuar consumindo tokens até o cancelamento ser observado.
 
-Ainda não há build remoto, Redis de produção configurado ou URL pública validados. Nenhum serviço pago foi contratado. Confirme os planos e os limites das contas antes de publicar.
+## Conferir uma atualização
 
-## Validação local
+1. Fazer commit e push no `main`.
+2. Conferir [Checks](https://github.com/marco-kraemer/ai_eng_challenge/actions/workflows/checks.yml) e **Vercel → Deployments → Ready**. Conferir o commit do deployment.
+3. Abrir `/api/health`: verifica o processo, não a cota OpenAI nem credenciais Redis.
+4. Em janela anônima, buscar categorias, consultar catálogo e endereço. Esses fluxos verificam assets, estado compartilhado e FAQ sem inferência.
+5. Com saldo disponível, conversar, mudar categoria, aceitar uma proposta e testar texto progressivo. Reiniciar e confirmar que a seleção anterior não reaparece.
+6. Consultar o pedido de demonstração e uma política com fontes. Não publicar chave ou cadastrar dados pessoais reais para testar.
 
-```bash
-.venv/bin/pip install -r requirements-dev.txt
-.venv/bin/python -m unittest discover -s tests -v
-.venv/bin/mypy app --check-untyped-defs
-node tests/test_frontend.js
-.venv/bin/python scripts/prepare_vercel.py
-```
+[Verificação de produção registrada](verificacao-producao.json) e [trace/streaming real](avaliacao-streaming.json). Cold starts, rede e limites do provedor podem aumentar o tempo; as medições locais não são SLA da demo.
 
-Se já houver o cache do modelo local, use `scripts/prepare_vercel.py --from-cache .cache` para testar o build sem baixar novamente. O cache gerado não deve ser commitado.
+## Diagnóstico
 
-Os testes de scripts Lua podem ser executados contra Redis real, com Docker:
+- **500 antes de abrir a página:** verificar variáveis Redis obrigatórias, logs de inicialização e deployment ativo.
+- **503 de estado:** conferir URL/token REST, permissões de escrita, namespace e disponibilidade Upstash.
+- **429 de LLM:** conferir saldo/limites na OpenAI; a aplicação não rotaciona chaves nem troca modelo.
+- **Sem traces:** conferir `EMPORIO_TRACING=true`, chave/workspace/endpoint, novo deployment e atraso de ingestão. Trace indisponível não deve derrubar a resposta.
+- **RAG falha no build:** conferir download público do encoder e logs de `prepare_vercel.py`; não remover o PDF/modelo do pacote para esconder o erro.
+- **Texto não progride:** conferir resposta `text/event-stream`, eventos e proxies que façam buffering. JSON estruturado do classificador permanece privado e não gera deltas.
 
-```bash
-docker run --detach --rm --name emporio-vercel-redis-test redis:7-alpine
-REDIS_TEST_CONTAINER=emporio-vercel-redis-test .venv/bin/python -m unittest discover -s tests -p test_redis_state.py -v
-docker stop emporio-vercel-redis-test
-```
+Referências: [FastAPI](https://vercel.com/docs/frameworks/backend/fastapi), [runtime Python](https://vercel.com/docs/functions/runtimes/python), [limites](https://vercel.com/docs/functions/limitations), [Upstash REST](https://upstash.com/docs/redis/features/restapi).
 
-Esses testes usam o transporte REST simulado para encaminhar os comandos a Redis real. Validam os scripts, bloqueios e armazenamento entre instâncias; não comprovam conectividade ou credenciais da Upstash de produção. O teste opcional é ignorado sem `REDIS_TEST_CONTAINER`.
+## Regressão de streaming corrigida
 
-Na preparação, passaram 112 testes Python, incluindo os seis testes com Redis real, além de mypy e testes Node. O RAG foi carregado com rede bloqueada a partir do pacote de 129,2 MiB: inicialização + consulta em 4,7 s e pico de RSS de 513,6 MiB. São medições locais desta verificação, não previsões de latência na Vercel. A geração pela LLM permanece com a pendência já registrada no ticket 14.
-
-Referências: [FastAPI na Vercel](https://vercel.com/docs/frameworks/backend/fastapi), [runtime Python](https://vercel.com/docs/functions/runtimes/python), [limites das funções](https://vercel.com/docs/functions/limitations), [headers da plataforma](https://vercel.com/docs/headers/request-headers), [Upstash REST](https://upstash.com/docs/redis/features/restapi).
-
-## Correção de tamanho do pacote
-
-O primeiro build remoto falhou com `LAMBDA_SIZE_EXCEEDED` (735,31 MiB). A preparação criava `.cache-build` dentro do projeto: `.vercelignore` só impedia seu envio inicial, mas não excluía o diretório recriado pelo build. O empacotador podia incluir blobs/snapshots auxiliares além do modelo final.
-
-O download agora ocorre em um diretório temporário fora do projeto, com limpeza em sucesso e falha. `.cache-build/**` também está excluído da função como proteção contra artefatos antigos. Repetir o build substitui arquivos antigos do modelo, inclusive arquivos somente de leitura.
-
-Mantenha `VERCEL_SUPPORT_LARGE_FUNCTIONS=1` em **Production e Preview** e confirme **Fluid Compute** habilitado. A variável é lida pelo empacotador durante o build; alterar só o ambiente de execução ou repetir um deployment antigo não aplica a correção. O empacotador Python 29.0.0, usado pelo CLI 65.4.0 do log, tenta instalar parte das dependências em execução quando essa opção está desabilitada; o conjunto ONNX/NumPy/modelo não cabe no limite interno dessa otimização. A correção reduz o pacote, mas não substitui essa configuração da plataforma.
-
-Reprodução local com o empacotador oficial `@vercel/python@29.0.0` e a variável habilitada: build concluído, função de 347,9 MiB (364.850.303 bytes), com aproximadamente 218,3 MiB de dependências e 129,2 MiB de assets do RAG. A inspeção dos arquivos da função não encontrou `.cache-build`, `.cache` ou `.env`. A confirmação do próximo build remoto permanece dependente da configuração e execução na conta Vercel. Os quatro testes de regressão do build passaram; a suíte totalizou 116 testes (seis testes opcionais de Redis real ignorados nesta execução).
+O primeiro teste público de SSE encontrou aquisição de lease/capacidade em uma thread e persistência em outra. Os proprietários Redis são locais à thread; a rota JSON funcionava, mas o stream falhava ao salvar e não liberava a capacidade corretamente. A aquisição, execução, persistência e liberação agora ocorrem no mesmo worker. O preflight ainda devolve 409/429 antes dos headers SSE. Um teste com Redis real reproduziu a falha e depois passou em três turnos consecutivos, verificando histórico, capacidade liberada e bloqueio concorrente. A correção foi confirmada também na URL pública.

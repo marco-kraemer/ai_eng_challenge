@@ -1,14 +1,28 @@
-# Empório da Música
+# Empório da Música · Tom
 
-Chatbot para clientes da Empório da Música, com LangChain e LangGraph. Ajuda a escolher instrumentos, tirar dúvidas sobre a compra, acompanhar pedidos e encontrar informações da loja.
+[![Checks](https://github.com/marco-kraemer/ai_eng_challenge/actions/workflows/checks.yml/badge.svg)](https://github.com/marco-kraemer/ai_eng_challenge/actions/workflows/checks.yml)
 
-A Empório da Música é fictícia. Esta entrega usa os arquivos fornecidos no desafio Artefact e mantém as divergências do manual explícitas.
+**Um atendente virtual que consulta o catálogo e o manual antes de responder.** Projeto do desafio técnico AI Engineer da Artefact: Python, LangChain, LangGraph, busca híbrida e uma interface voltada ao cliente final.
 
-[Repositório](https://github.com/marco-kraemer/ai_eng_challenge) · [Exemplos reais](docs/exemplos-de-interacao.md) · [Busca no manual](docs/busca-politicas.md) · [LangChain e LangGraph](docs/arquitetura-langgraph.md) · [Entrega e hospedagem](docs/entrega.md)
+**[Abrir a demo](https://emporiomusica.vercel.app)** · [Cinco exemplos reais](docs/exemplos-de-interacao.md) · [Avaliação e custo](docs/observabilidade-e-avaliacao.md) · [Deploy](docs/deploy-vercel.md)
 
-## Executar
+![Interface da Empório da Música](docs/assets/demo-desktop.png)
 
-Python 3.12, acesso à internet para instalação e, no primeiro uso de políticas, download do modelo de embeddings. Na raiz:
+A loja é fictícia. Os CSVs e o manual são os dados de demonstração fornecidos no desafio. Divergências das fontes não representam condições comerciais reais.
+
+## Experimente em três minutos
+
+1. Abra **Encontrar um instrumento**, selecione Violões e Ukuleles e consulte até R$ 600. Esse fluxo consulta os CSVs sem LLM.
+2. Escreva “Agora quero instrumentos de qualquer tipo até mil reais”. A LLM deve substituir o escopo anterior pelo catálogo geral.
+3. Pergunte “Quero devolver uma compra por arrependimento” e depois “Comprei pela internet”. O agente pede a modalidade e consulta o manual com esse contexto.
+4. Compare “Qual o endereço da loja?” com “Me ensine Python”: informação institucional vem do PDF sem LLM; programação recebe recusa.
+5. Em **Meu pedido**, use número **1** e e-mail de demonstração **pedro.oliveira@jmail.com**. O formulário consulta os registros diretamente, sem enviar as credenciais ao modelo.
+
+Mensagens recebem confirmação imediata, progresso das consultas e texto transmitido pelo provedor. Cards, fontes e estado são finalizados juntos. **Nova conversa** descarta o contexto e impede que uma resposta atrasada reapareça.
+
+## Executar localmente
+
+Requisitos: Python 3.12, internet para instalar dependências e baixar o encoder no primeiro uso do RAG. Node 22 é usado apenas nos testes do frontend.
 
 ```bash
 python3 -m venv .venv
@@ -16,7 +30,7 @@ python3 -m venv .venv
 cp -n .env.example .env
 ```
 
-Preencha `.env` localmente:
+Preencha o `.env` local, sem versioná-lo:
 
 ```dotenv
 LLM_PROVIDER=openai
@@ -28,116 +42,115 @@ OPENAI_MODEL=gpt-4.1-mini
 .venv/bin/uvicorn app.web:app --host 127.0.0.1 --port 8000 --workers 1 --no-proxy-headers
 ```
 
-Abra **http://localhost:8000**. A chave fica no servidor; `.env` é ignorado pelo Git e pelo Docker. Sem chave/cota, a seleção de instrumento e orçamento, a busca estruturada no catálogo e a consulta protegida de pedidos continuam disponíveis. Somente a conversa gerada pelo modelo informa indisponibilidade ou limite.
+Abra **http://localhost:8000**. `OPENAI_API_KEY` também é aceita; `OPEN_AI_KEY` tem prioridade. Sem chave/cota, catálogo guiado, comparação, pedido e FAQ institucional continuam disponíveis. A conversa gerada precisa do provedor.
 
-Para preparar o índice antes de abrir o chat e reproduzir a avaliação de recuperação, sem chamar a LLM:
+Upstash é opcional localmente e obrigatório na Vercel. LangSmith é opcional: configure `LANGSMITH_API_KEY` e `LANGSMITH_PROJECT=emporio-musica`. Os segredos ficam exclusivamente no servidor. Todas as variáveis estão em [.env.example](.env.example).
 
-```bash
-.venv/bin/python scripts/evaluate_policies.py --output docs/avaliacao-busca-politicas.json
+## Como funciona
+
+```mermaid
+flowchart TD
+    UI[Cliente · HTML/CSS/JavaScript] --> API[FastAPI · JSON / SSE]
+    API --> Guards[Validação · limites · lease de sessão]
+    Guards --> FAQ{FAQ institucional reconhecida?}
+    FAQ -- Sim --> Direct[PDF em cache · zero LLM]
+    FAQ -- Não --> Route[LangGraph · classificação e plano semântico]
+    Route --> Scope[Escopo da mensagem atual + contexto recente]
+    Scope --> Tools[LangChain · ferramentas validadas]
+    Tools --> CSV[Catálogo / promoções · filtros e Decimal]
+    Tools --> RAG[Manual · BM25 + E5 / cosseno + RRF]
+    Tools --> LLM[OpenAI · GPT-4.1 mini · resposta em streaming]
+    Direct --> Final[Resposta / cards / fontes · estado final]
+    LLM --> Final
+    Final --> UI
+    Guards <--> Redis[Upstash · contexto / leases / limites com TTL]
+    Route -. metadados sanitizados .-> Smith[LangSmith · etapas / tokens / custo / latência]
+    API --> Order[Formulário de pedido · número + e-mail · sem LLM]
 ```
 
-O modelo local usa aproximadamente 130 MB de disco e o processo de avaliação teve pico de cerca de 672 MB de RAM. Os vetores são reconstruídos quando o PDF muda. `POLICY_CACHE_DIR` permite escolher o diretório gravável do cache.
+| Informação | Consulta escolhida | Por quê |
+|---|---|---|
+| Preço, estoque, categorias e comparação | Filtros exatos sobre CSV; valores em `Decimal` | Similaridade não deve decidir se um produto cabe no orçamento |
+| Nome/marca/modelo | Tokens normalizados antes da paginação | Encontra `GD20`, `GD-20` e `GD 20` sem substituir um modelo inexistente |
+| Política e regras da loja | RAG híbrido com páginas de origem | Perguntas livres exigem localizar evidências no manual |
+| Endereço, horários regulares e contatos reconhecidos | FAQ extraída do PDF e cache por hash | Evita inferência e embeddings para respostas estáveis |
+| Pedido individual | Cruzamento de número + e-mail no backend | Dados do cadastro não precisam entrar no contexto da LLM |
 
-## Usar
+**LangGraph controla a execução.** O grafo separa FAQ, classificação, identidade, recusa, pedido, políticas, comparação e catálogo; o subgrafo de atendimento limita o ciclo modelo → ferramentas → modelo. LangChain fornece mensagens, modelo de chat e sete ferramentas com argumentos Pydantic. [Grafo e contratos](docs/arquitetura-langgraph.md).
 
-- **Encontrar um instrumento:** mostra apenas categorias com produtos ativos em estoque, com esboços monocromáticos. Selecione uma ou mais categorias, ou **Todos os instrumentos**, clique em **Continuar** e depois escolha um orçamento, com valores sugeridos, campo livre ou “Ainda não defini um valor”. A busca consulta diretamente o catálogo, sem chamada ao modelo e sem instrumento/preço predefinidos.
-- **Acompanhar meu pedido:** abre a verificação de número e e-mail da compra. Retorna apenas status, previsão e rastreio; as credenciais do formulário não vão ao modelo.
-- **Dúvidas sobre minha compra:** oferece assuntos como troca/devolução, defeito, entrega, pagamento e garantia. A pergunta é enviada somente depois de escolher o assunto.
-- **Informações da loja:** oferece horários, endereço e contato, sem mandar uma pergunta arbitrária ao abrir o menu.
-- **Nova conversa:** limpa mensagens e pendências, cancela a apresentação de respostas antigas e retorna às opções iniciais. Reabrir a página também inicia outra sessão.
+**A LLM interpreta o pedido.** Ela decide categorias, filtros, aceites e recusas com o histórico. Uma leitura independente da mensagem atual evita herdar indevidamente a categoria antiga. Operações semânticas de orçamento (`keep`, `set`, `clear`, `accept_offer`) são executadas sobre valores reais; Python não enumera frases possíveis do cliente. Um plano executa a busca antes da redação, e o modelo de resposta não pode substituí-la silenciosamente.
 
-A interface é exclusivamente para o cliente final. Não oferece preparação de mensagens para outro cliente nem orientações de trabalho para atendentes. Ilustrações representam categorias, não fotos de produtos específicos. Detalhes e valores dos cards vêm dos CSVs.
+**O RAG faz chunking.** O manual gera 26 chunks por seção, com limite de 1.800 caracteres e sem overlap. Embeddings E5 multilíngues locais, ONNX quantizado, 384 dimensões; matriz NumPy com cosseno, SQLite FTS5/BM25 e fusão RRF ponderada, top 3. Não há serviço vetorial externo: esse volume cabe em memória. Índice e embeddings são invalidados pelo hash do PDF. [Algoritmo, avaliação e falhas](docs/busca-politicas.md).
 
-Se o teto não alcançar nenhum produto, a busca informa o menor preço real disponível e oferece um botão para consultar até esse valor. O orçamento só muda após confirmação. Sem estoque, oferece escolher outro instrumento; erros de leitura não são tratados como ausência de produto. O resumo permite alterar o orçamento preservando a categoria.
+**Há três reaproveitamentos distintos:** FAQ institucional sem LLM; cache do índice/encoder do RAG por instância; tokens de prompt em cache informados pela OpenAI. Não há cache semântico de respostas geradas nem cache de preço/estoque. Dados comerciais são relidos.
 
-Nos cards, selecione de dois a quatro instrumentos e use **Comparar selecionados**. A comparação relê preços de tabela, disponibilidade e especificações diretamente no catálogo, com diferença para o orçamento calculada em Python, sem consumir cota do modelo. Fotografias de produtos não foram fornecidas; os esboços representam categorias.
+## Evidência e custo
 
-## Verificar
+| Verificação | Resultado observado |
+|---|---|
+| Contratos Python, incluindo Redis real | 156 testes passaram localmente |
+| Tipagem | mypy, 31 arquivos sem erro |
+| Frontend | Node + Chromium: categorias, orçamento, reset, fontes, streaming e erro |
+| Agente real, CSV/PDF reais, HTTP local | 26/26 contratos; 40 chamadas; custo estimado **US$ 0,0238** |
+| Latência dessa rodada | Mediana **1,50 s**, p95 **5,59 s** por operação, incluindo rotas sem LLM |
+| Streaming OpenAI + trace remoto | Primeiro trecho **2,40 s**; resposta concluída **3,68 s**, medição local separada |
+| Recuperação do manual | Seções esperadas em **20/22** casos de desenvolvimento na busca híbrida |
+
+Os números são amostras, não SLA nem uma taxa geral de ausência de alucinação. Contratos automáticos verificam filtros, produtos, fontes, isolamento e recusas; a redação exige revisão. Há relatórios com código/modelo, decisões estruturadas, erros e limitações. Custos usam usage real e [preços publicados do GPT-4.1 mini](https://developers.openai.com/api/docs/models/gpt-4.1-mini); ausência de usage fica como **desconhecida**, nunca zero. [Relatório completo e revisão](docs/observabilidade-e-avaliacao.md).
+
+LangSmith recebe trace por turno, sessão pseudonimizada, etapas do grafo/ferramentas, tokens e latência. Prompts, mensagens, respostas, número/e-mail de pedidos e chaves não são exportados. Falha de telemetria não interrompe o atendimento. O painel exige acesso à conta; as evidências sanitizadas estão no repositório.
+
+## Verificar e reproduzir
 
 ```bash
 .venv/bin/pip install -r requirements-dev.txt
-.venv/bin/python -m unittest discover -s tests -v
+EMPORIO_TRACING=false .venv/bin/python -m unittest discover -s tests -v
 .venv/bin/mypy app --check-untyped-defs
 node tests/test_frontend.js
+node tests/test_stream_parser.js
 ```
 
-Os testes Python usam provedor simulado e dados sintéticos para pedidos, sem custo de modelo nem download dos embeddings. O teste Node requer Node 22 e usa um DOM mínimo para o seletor, valores em reais, orçamento opcional, IDs de conversa, fontes e reinício com resposta atrasada.
+Sem `REDIS_TEST_CONTAINER`, sete testes Redis são ignorados. Para executá-los:
 
-A verificação adicional em Chromium usa API simulada e cobre navegação por teclado, ilustrações das categorias disponíveis carregadas, seleção de instrumento e valor, voltar etapas, orçamento opcional, catálogo real sem modelo, fontes, mobile, reinício, recuperação de erro e formulário de pedido:
+```bash
+docker run --detach --rm --name emporio-redis-test redis:7-alpine
+REDIS_TEST_CONTAINER=emporio-redis-test EMPORIO_TRACING=false .venv/bin/python -m unittest discover -s tests -p test_redis_state.py -v
+docker stop emporio-redis-test
+```
+
+Testes de navegador opcionais, com servidores isolados e sem inferência paga:
 
 ```bash
 .venv/bin/pip install playwright
 .venv/bin/python -m playwright install --with-deps chromium
-# Com o servidor local rodando:
-PYTHONPATH=. .venv/bin/python tests/browser_smoke.py
+EMPORIO_TRACING=false PYTHONPATH=. .venv/bin/python tests/browser_category_scope.py
+EMPORIO_TRACING=false PYTHONPATH=. .venv/bin/python tests/browser_stream_smoke.py
 ```
 
-Playwright é opcional para desenvolvimento, fora das dependências da aplicação. Capturas dessa verificação ficam em `/tmp/emporio-customer-*.png`. São verificações com dados simulados de API; os exemplos de chamadas reais estão documentados separadamente.
-
-A conversa também consulta produtos por nome, marca ou modelo: por exemplo, “Quanto custa o Takamine GD20?”. A ferramenta filtra o catálogo inteiro antes da paginação, normaliza maiúsculas, acentos e separadores de modelo (`GD20`, `GD-20`, `GD 20`) e respeita preço, categoria e estoque. Não usa aproximação para substituir um modelo inexistente por outro.
-
-## Arquitetura e decisões
-
-FastAPI serve HTML e arquivos CSS/JavaScript/SVG locais. Não há frontend separado ou dependência de imagens externas. `StoreAssistant` classifica escopo e identidade; `Chat` executa um registro de ferramentas somente leitura. Argumentos, filtros, cálculos e campos retornados são controlados no Python.
-
-| Informação | Fonte e consulta |
-|---|---|
-| Produto, categoria, preço de tabela, estoque | CSV, filtros estruturados e comparação por ID |
-| Promoção vigente e preço promocional | CSV de promoções ativas, Decimal, sem acumular PIX |
-| Política, horário, endereço | PDF: BM25 + embeddings E5 multilíngues locais, RRF e páginas |
-| Canal para concluir compra | Contatos extraídos literalmente do PDF, com divergências |
-| Pedido individual | Cruzamento de pedido + e-mail no backend, sem enviar cadastro ao modelo |
-
-A busca híbrida recuperou todas as seções esperadas em **20/22** casos de desenvolvimento, contra 18/22 na lexical e 16/22 na semântica isolada. [Resultados e falhas conhecidos](docs/avaliacao-busca-politicas.json). Essa métrica não comprova a correção de todas as respostas finais.
-
-O provedor padrão é a API direta da OpenAI, com `gpt-4.1-mini` (também aceita o snapshot `gpt-4.1-mini-2025-04-14`). Configure `OPEN_AI_KEY` ou `OPENAI_API_KEY`; se ambas existirem, `OPEN_AI_KEY` tem prioridade. Há até 2.048 tokens de saída por chamada e nenhuma troca automática de modelo ou provedor. Configure o orçamento da API no painel do provedor. [Modelo e preços](https://developers.openai.com/api/docs/models/gpt-4.1-mini). Para usar a integração anterior, defina explicitamente `LLM_PROVIDER=openrouter`, `OPENROUTER_API_KEY` e `OPENROUTER_MODEL=openrouter/free`; ela continua aceitando apenas modelos gratuitos. O adaptador Gemini permanece como alternativa técnica legada.
-
-A orquestração usa LangGraph para classificação, políticas com busca obrigatória, comparação com dados atuais e um ciclo limitado de ferramentas. LangChain fornece o modelo de chat e sete ferramentas com argumentos validados. A LLM interpreta preferências e continuações no contexto; orçamento é opcional e não há listas de frases para decidir buscas. [Fluxos, estado, decisões e testes](docs/arquitetura-langgraph.md).
-
-## Perguntas institucionais sem LLM
-
-Variações reconhecidas de endereço, horários regulares, telefone, WhatsApp e e-mail são respondidas antes da classificação, sem tokens de LLM nem embeddings — inclusive na primeira consulta. As respostas vêm do manual e mantêm as páginas de origem. Um cache limitado em memória evita extrair o PDF novamente e é invalidado pelo hash do arquivo.
-
-Perguntas mistas, datas especiais/relativas e continuações ambíguas seguem o fluxo normal. O atalho usa regras conservadoras por intenção, não similaridade semântica entre respostas geradas. [Funcionamento e testes](docs/cache-institucional.md).
-
-## Limites e privacidade
-
-- Localmente, até 100 conversas em memória por processo; na Vercel, estado e limites compartilhados no Redis; expiram após 15 minutos de inatividade. Tokens de conversa ficam apenas na página, sem cookies/localStorage. Histórico: até 12 mensagens e 8.000 caracteres, com e-mails removidos; estado mínimo guarda filtros, IDs, assunto, modalidade de compra, pergunta pendente e opções disponíveis. Sem sumarização automática.
-- Requisição: até 16 KB; mensagem: 2.000 caracteres. Contexto dinâmico serializado: até 24 KB UTF-8, um limite conservador em bytes, não a contagem exata do tokenizer do modelo. Saída configurada em até 2.048 tokens por geração.
-- Até quatro gerações no subgrafo e três ferramentas por geração, além da classificação, da leitura isolada de escopo nas buscas conversacionais e da consulta prévia de políticas/comparação quando aplicável; quatro atendimentos simultâneos, 20 requisições de chat/min/IP e cinco verificações de pedido/min/IP. Limites são locais a um processo; usar um worker. Não confiar em cabeçalhos de proxy sem configurar um proxy confiável.
-- No máximo uma repetição em timeout/conexão ou HTTP 502/503/504. HTTP 429 não é repetido automaticamente e recebe indicação de limite; não troca de modelo/provedor. A quota do modelo pode ficar indisponível mesmo com a aplicação saudável.
-- Número + e-mail é **verificação fraca**, sem autenticação forte. Produção exige autenticação/OTP, proteção distribuída contra tentativas e revisão de privacidade. Status/previsão/rastreio são registros da base, sem rastreamento ao vivo.
-- O manual diverge em contatos e mínimos de parcelamento; o agente deve expor a incerteza e pedir confirmação à equipe. Conteúdo recuperado permanece como dado de ferramenta, sem conceder permissões.
-- Identidade e recusa são controladas pela aplicação, mas a classificação de escopo e a redação dependem do modelo e podem errar. Não garantimos ausência absoluta de alucinação ou prompt injection.
-- Não há carrinho, reserva, cupom, pedido novo, pagamento, transferência ou envio automático de mensagens. Logs não registram credenciais, cadastro ou corpo do provedor.
-
-## Vercel
-
-A configuração para FastAPI na Vercel está incluída: conversas e limites compartilhados via Upstash Redis, assets do RAG preparados no build e cache gravável em `/tmp`. Configure as variáveis do `.env.example` no painel, sem enviar o `.env`. [Configuração, publicação e verificações](docs/deploy-vercel.md). Ainda não há URL publicada nem build remoto validado.
-
-Para testes e tipagem em um ambiente novo, instale `requirements-dev.txt`; `requirements.txt` contém as dependências de execução.
-
-## Docker e publicação
-
-Com Docker e Buildx:
+Avaliações reais são **opt-in e pagas**, com teto por execução e limite de chamadas:
 
 ```bash
-docker buildx build --load -t emporio-demo:local .
-docker run --rm --env-file .env -p 127.0.0.1:8000:8000 emporio-demo:local
+EMPORIO_TRACING=false .venv/bin/python scripts/evaluate_agent.py --live --budget-usd 0.50 --max-calls 60 --output /tmp/evaluation.json
+.venv/bin/python scripts/evaluate_policies.py --output /tmp/retrieval.json
 ```
 
-Antes da migração para LangChain/LangGraph, a imagem foi construída e testada com limite de 1 GB, incluindo busca híbrida real e verificação de pedido; o pico do teste foi de aproximadamente 531 MB com cache montado. Reconstrua a imagem para incluir as novas dependências; o consumo desta versão não foi medido novamente. A imagem não inclui `.env`, `.git`, caches ou artefatos pessoais. A execução local é a alternativa de entrega; **não há link público da aplicação publicado**. O remoto GitHub está configurado; acesso público ainda precisa ser confirmado (a consulta anônima retornou 404). A memória medida elimina a suposição de que um serviço de 512 MB seja suficiente. A análise de opções, requisitos de conta e pendências está em [Entrega e hospedagem](docs/entrega.md).
+O segundo comando usa apenas embeddings locais. No GitHub, `Checks` roda em push/PR sem chaves pagas, incluindo Redis e navegador. `Live evaluation` é exclusivamente manual, exige o secret `OPEN_AI_KEY` e publica um artefato; não roda em PR de fork. Seu teto é conservador por execução, não um limite global da conta OpenAI.
 
-## Uso de assistentes de código
+## Deploy e limites conhecidos
 
-Codex ajudou na decomposição em tickets, implementação em ciclos de teste que falha/implementação/refatoração, validações e documentação. Os testes e limitações estão registrados no repositório; o histórico de commits preserva as fatias entregues. Decisões de produto: [documento original](docs/decisoes-do-projeto-agente-artefact.md). Backlog: `.scratch/issues/`.
+GitHub `main` conectado à Vercel, Python/FastAPI na mesma origem do frontend, Upstash para contexto/limites e assets do RAG preparados no build. Push dispara deploy; confira `Checks` e o status da Vercel antes de compartilhar. [Configuração e diagnóstico](docs/deploy-vercel.md).
 
-## Avaliação das jornadas
+- Histórico: 12 mensagens/8.000 caracteres, TTL de 15 minutos, até 100 sessões; filtros e propostas em estado estruturado. Não há memória permanente nem sumarização. Localmente, usar um worker; na Vercel o estado é compartilhado.
+- Mensagem: 2.000 caracteres; corpo: 16 KB; contexto dinâmico: 24 KB UTF-8. Até quatro gerações no subgrafo, três ferramentas por geração, mais planejamento/classificação. Quatro atendimentos simultâneos, 20 requisições de chat/min/IP, cinco verificações de pedido/min/IP.
+- GPT-4.1 mini, temperatura zero, até 2.048 tokens de saída; sem rotação de chaves, fallback pago ou troca automática de modelo. Há um retry limitado para falhas transitórias; 429 não é repetido.
+- RAG local evita API de embeddings paga, mas adiciona modelo de aproximadamente 130 MB e inicialização a frio. A amostra local não prevê latência na Vercel.
+- Número + e-mail é verificação fraca de demonstração. Uso real exige autenticação/OTP, revisão dos dados, consentimento e operação comercial. O rastreio retorna registros históricos da base, sem consulta ao vivo à transportadora.
+- O manual contém conflitos de contatos e parcelamento; o catálogo também tem descrições inconsistentes. O conflito objetivo de número de teclas é sinalizado no card, mas o verificador não detecta toda divergência possível de marca/modelo. Não alteramos os dados para esconder o problema.
+- LLMs podem interpretar ou redigir mal, repetir preços e oferecer ajuda de forma ambígua. Os testes são uma amostra de desenvolvimento, não avaliação independente. Há recusas e limites, sem promessa de resistência absoluta a prompt injection.
+- Não cria carrinhos, reservas, descontos, pedidos, pagamentos ou transferências. Fontes e ferramentas são somente leitura.
 
-```bash
-.venv/bin/python scripts/evaluate_journeys.py
-```
+## Uso de IA no desenvolvimento
 
-O conjunto em `tests/fixtures/customer_journeys.json` cobre oito jornadas de orçamento, disponibilidade, comparação, contexto, escopo, identidade, políticas e pedidos. [Relatório](docs/avaliacao-jornadas.json). A inferência é simulada; APIs, grafos, catálogo e recuperação local são reais. É uma verificação de comportamento e integração, não uma nota de qualidade do modelo ao vivo. Uma expectativa incorreta faz o comando terminar com erro.
+Codex foi usado para explorar o requisito, decompor tickets locais, implementar, escrever testes, diagnosticar falhas, revisar documentação e executar verificações. As decisões de produto, testes manuais e direção do projeto foram conduzidos por Marco. Os relatórios distinguem modelo real, inferência simulada e verificações locais/remotas; números não observados não são apresentados como resultados. O histórico de commits preserva a evolução e as correções.
 
-`tests/browser_catalog_smoke.py` exercita categorias disponíveis, esboços, consentimento para ampliar preço, edição do orçamento e comparação por seleção no navegador, com APIs reais e sem chamadas ao modelo. Execute com o servidor local ativo e Playwright instalado, como no smoke da interface.
+[Decisões do projeto](docs/decisoes-do-projeto-agente-artefact.md) · [Personalidade do Tom](docs/personalidade-tom.md) · [Checklist de entrega](docs/entrega.md)

@@ -1,80 +1,41 @@
-# Entrega, validação e hospedagem
+# Conferência da entrega
 
-## Estado da aplicação
+Projeto do desafio técnico AI Engineer Artefact. A publicação prepara a avaliação; não envia candidatura ou e-mail automaticamente.
 
-Execução local documentada e remoto configurado em [GitHub](https://github.com/marco-kraemer/ai_eng_challenge). A consulta anônima à API GitHub retornou 404: o acesso público ao repositório ainda precisa ser confirmado pelo proprietário; não alteramos sua visibilidade. Não há URL pública da aplicação em hospedagem externa. Não foi contratado recurso pago.
+- Demo: https://emporiomusica.vercel.app
+- Código público: https://github.com/marco-kraemer/ai_eng_challenge
+- [Arquitetura, instalação e uso de IA](../README.md)
+- [Cinco interações reais](exemplos-de-interacao.md)
+- [Avaliação, métricas e limites](observabilidade-e-avaliacao.md)
+- [Produção](verificacao-producao.json)
+- [CI](https://github.com/marco-kraemer/ai_eng_challenge/actions/workflows/checks.yml)
 
-Funcionalidades: abertura por quatro caminhos de cliente, seletor ilustrado de instrumento e orçamento; consultas estruturadas de catálogo e promoções; comparação com diferença monetária calculada; RAG híbrido no manual; canais oficiais com fontes; contexto efêmero; próximos passos voltados ao comprador; consulta protegida de pedidos fora do modelo; limites e tratamento de erro.
+## O que foi verificado
 
-Público confirmado pelo usuário: CLIENTE FINAL. A interpretação anterior de apoio ao atendente foi corrigida. Foram removidos slogans, perguntas em terceira pessoa sobre outro cliente e o recurso de preparar/copiar rascunhos. A escolha de instrumento abre etapas explícitas de categoria e orçamento; não envia uma busca fixa de violão até R$ 600.
+Em 2026-11-03, o repositório foi tornado público após autorização e revisão dos arquivos históricos. A inspeção de 309 blobs não encontrou chaves nos padrões verificados nem os segredos presentes no `.env`; o arquivo não está versionado. Isso é uma inspeção pontual, não garantia universal sobre qualquer dado sensível futuro.
 
-## Migração para LangChain e LangGraph
+A loja e os dados são de demonstração do desafio. O formulário de pedido retorna campos mínimos e mantém as credenciais fora da LLM. O README explicita a verificação fraca, as divergências do manual/catálogo e as limitações do protótipo. Não usar cadastros pessoais reais nesta demonstração.
 
-A conversa agora executa grafos compilados com mensagens e ferramentas LangChain. Há rotas explícitas para escopo, identidade, produtos, comparação, políticas e formulário de pedidos; os fluxos visuais determinísticos permanecem sem modelo. Arquitetura e reprodução: [LangChain e LangGraph](arquitetura-langgraph.md).
+`Checks` passou no GitHub para `185dfcc`, incluindo Python/Redis real, mypy, Node e Chromium. [Execução](https://github.com/marco-kraemer/ai_eng_challenge/actions/runs/41691393208). A revisão final também deve passar pelo workflow; o badge do README aponta seu estado atual.
 
-As verificações Docker e de memória abaixo foram feitas antes desta migração. A imagem precisa ser reconstruída e medida novamente para esta versão.
+Localmente: 156 testes Python passaram com Redis real, mypy sem erro em 31 arquivos, testes Node e navegadores de categoria, streaming e fluxo com RAG real. Inferência simulada nesses testes não é apresentada como avaliação do modelo.
 
-## Validações
+A avaliação live usa GPT-4.1 mini e dados reais do desafio; o JSON registra versão/fingerprint, usage, custo estimado e respostas literais. A revisão qualitativa e as imperfeições estão documentadas. Não há promessa de ausência de alucinação ou resistência completa a ataques.
 
-- Imagem Docker construída e executada com limite de 1 GB: página, API protegida de pedidos, ausência de chave embutida e recuperação híbrida com embeddings reais passam; pico de RSS aproximado de 531 MB no teste com cache montado.
-- Instalação das dependências em um segundo ambiente Python 3.12 limpo, sem usar pacotes da `.venv` do projeto.
-- 73 testes Python; verificação de tipos com mypy; teste Node de seletor, valores BRL, orçamento opcional, IDs de conversa, fontes e descarte de resposta atrasada.
-- Chromium real: desktop 1440×1000, celular 390×844, navegação por teclado, seleção entre categorias com estoque e esboços monocromáticos, escolha/edição de preço e ausência de orçamento, catálogo real, ações contextuais, fontes expansíveis, reinício, repetição após erro, movimento reduzido e formulário de pedido sem enviar e-mail ao chat. Apenas as APIs do modelo e de verificação de pedido são simuladas nessa verificação; categorias, ilustrações e busca de catálogo são reais e não consomem cota do modelo.
-- Chromium com servidor temporário: interface → HTTP → grafos → comparação e busca híbrida real → recusa → formulário de pedido. Somente a inferência do modelo foi simulada nesse teste adicional (`tests/browser_graph_smoke.py`).
-- Avaliação local de recuperação com embeddings reais: 20/22 casos de desenvolvimento positivos na busca híbrida. Casos perdidos e falsos positivos estão publicados no JSON e na documentação da busca.
-- Cinco exemplos reais com OpenRouter documentados separadamente. O teste de continuação da versão anterior recebeu 429 do provedor. Nesta revisão, o catálogo guiado funciona independentemente dessa cota; o recurso de rascunho foi removido. Os testes não são apresentados como prova de disponibilidade contínua da API de modelo.
+A URL pública foi aberta em navegador sem autenticação: categorias múltiplas, catálogo real, mobile, reset e FAQ via SSE. O teste HTTPS com OpenAI e Upstash verifica aceitação de orçamento e troca de escopo. O build da função observado tem 145,89 MB. Os assets do RAG são pré-calculados no build, sem download em execução.
 
-A contagem de testes não comprova ausência de alucinação. Verificações do provedor e do navegador têm escopos diferentes, descritos acima.
+## Antes de compartilhar com o avaliador
 
-## Memória e custo
+Conferir saldo da API OpenAI e disponibilidade da Vercel/Upstash. A quota/saldo são externos e podem mudar. A rota health não os comprova. Para continuar testando, o workflow pago é manual e precisa do secret `OPEN_AI_KEY` no GitHub; o CI comum não usa esse segredo.
 
-A avaliação de recuperação mediu pico de cerca de 672 MB no processo e 130 MB de cache do modelo. Modelo local na CPU, sem API de embeddings paga. Um worker evita duplicação do modelo. Recomenda-se medir o backend completo com pelo menos 1 GB disponível antes de escolher hospedagem.
+Abrir a demo em janela anônima e seguir o roteiro de três minutos do README. Ler os exemplos e as limitações, confirmar o commit público e o último deployment Ready. Preparar a mensagem de apresentação pessoal e respeitar o prazo informado pelo recrutador; não foi registrada uma submissão automática nesta execução.
 
-As chaves permanecem como variáveis secretas no servidor. O OpenRouter só aceita a seleção gratuita nesta aplicação; sem fallback automático pago. O roteador varia o modelo e as cotas, podendo receber 429. Os limites do processo não garantem uma cota diária de terceiros nem substituem autenticação e proteção distribuída.
+## Próximos passos de produto
 
-## Opções avaliadas em 2 de novembro de 2026
+1. Corrigir fontes comerciais conflitantes com o responsável pela loja e substituir verificação de pedido por autenticação/OTP.
+2. Ampliar avaliação independente, com revisão humana cega de grounding/persona, casos inéditos e comportamento sob carga.
+3. Melhorar concisão e reduzir ofertas de ajuda ambíguas na redação; a aplicação não realiza transferências ou contato externo.
+4. Medir cold start/latência/custo em tráfego representativo; revisar número de chamadas de planejamento sem perder correção contextual.
+5. Definir políticas de retenção, operação de incidentes e orçamento global antes de uso comercial.
 
-**Hugging Face Spaces / Docker:** a documentação informa CPU Basic com 2 vCPU, 16 GB de RAM e 50 GB de disco não persistente, sem custo por hora. Entretanto, a mesma página informa que criar Spaces com computação (Docker/Gradio) exige plano pago, com uma exceção específica ligada ao free tier de ZeroGPU. Não há conta/credencial de hospedagem elegível configurada nesta sessão. Portanto, isso não foi tratado como opção garantidamente sem custo, nem contratado. A memória seria compatível, mas elegibilidade/custo da conta e funcionamento público precisam ser confirmados. [Fonte](https://huggingface.co/docs/hub/spaces-overview).
-
-**Render gratuito:** suporta serviços web Python, mas suspende após 15 minutos sem tráfego, perde alterações do disco local e tem limites de uso. O cache precisa ser reconstruível. Não foi validado um plano gratuito com memória suficiente para a aplicação atual; não se deve presumir que 512 MB bastem. [Fonte](https://render.com/docs/free).
-
-O índice e o modelo podem ser reconstruídos no primeiro uso após perda de cache, com custo de download e inicialização. Não há necessidade de persistir conversas ou pagar por banco. Uma futura hospedagem também deve servir a aplicação e as APIs na mesma origem, respeitar a porta do container e manter as chaves fora do frontend. Publicação embutida em iframe exigirá revisar a política `frame-ancestors`, hoje restrita.
-
-## Pendência de publicação
-
-A alternativa local atende à decisão de entrega quando a demo gratuita não é viável. Publicação externa fica condicionada a uma conta elegível sem custo, recursos de memória adequados e configuração dos segredos. O pacote Docker serve como ponto de partida; ele não representa um deploy já realizado. Não há uma URL de demonstração externa para registrar neste momento.
-
-## Execução e checks
-
-Use os comandos do README para instalar e iniciar. Os comandos do README reproduzem testes Python, mypy e Node sem chave de modelo. A validação visual é opcional e requer Playwright/Chromium. A instalação do navegador é apenas para desenvolvimento.
-
-Os CSVs e o PDF são os fornecidos no desafio. A verificação de pedidos exige número e e-mail, retorna campos mínimos e mantém esses dados fora do modelo pelo formulário. Para produção, isso deve ser substituído por autenticação ou código de uso único, além de revisão dos dados e das regras comerciais conflitantes.
-
-## Ambientes com proxy TLS
-
-O Dockerfile admite um certificado público de confiança como secret temporário de build, sem gravá-lo na imagem:
-
-```bash
-docker buildx build --load --secret id=proxy_ca,src=/etc/ssl/certs/ca-certificates.crt -t emporio-demo:local .
-```
-
-Se o ambiente de execução também exigir essa CA, monte o bundle somente para leitura e configure os clientes Python, mantendo a verificação TLS:
-
-```bash
-docker run --rm --env-file .env -p 127.0.0.1:8000:8000 \
-  --mount type=bind,src=/etc/ssl/certs/ca-certificates.crt,dst=/run/proxy-ca.pem,readonly \
-  -e SSL_CERT_FILE=/run/proxy-ca.pem \
-  -e REQUESTS_CA_BUNDLE=/run/proxy-ca.pem emporio-demo:local
-```
-
-Esse detalhe é específico de ambientes com proxy que termina TLS; não é necessário copiar certificados de sessão para o repositório. O comando padrão de inicialização e o comando do healthcheck do Docker também foram executados com sucesso, sem chave de modelo na imagem.
-
-## Revisão do catálogo guiado
-
-O seletor exibe seis categorias no catálogo atual, calculadas pelos produtos ativos com estoque. Ausência por orçamento oferece o menor preço real e exige confirmação; ausência de estoque e erro de consulta são respostas distintas. O orçamento pode ser editado preservando a categoria. A seleção de dois a quatro cards produz comparação determinística, sem LLM, com dados atuais.
-
-O smoke adicional de catálogo usa navegador e APIs reais e impede qualquer chamada ao chat. Oito jornadas reproduzíveis passaram no relatório `avaliacao-jornadas.json`; a inferência é simulada, sem alegação de avaliação do modelo ao vivo. Os esboços são imagens de categoria e não fotografias de modelos específicos.
-
-## Preparação para Vercel
-
-A configuração atual para Vercel/FastAPI, Upstash e RAG pré-calculado está em [Deploy na Vercel](deploy-vercel.md). Essa preparação substitui a escolha de hospedagem sugerida anteriormente, mas ainda não representa uma publicação ou build remoto validado. A pendência de interpretação com modelo real permanece no ticket 14.
+Esses pontos são limites e evolução posterior; a demo entregue não se apresenta como operação comercial pronta.

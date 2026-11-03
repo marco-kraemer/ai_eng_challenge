@@ -1,0 +1,128 @@
+{
+  "url": "https://emporiomusica.vercel.app",
+  "deployment": "dpl_7jZNDiukgzpXtSjZjMqoUWbgGb4t",
+  "revision": "185dfcc5914a48cc035d6c624b27219a63416290",
+  "date": "2026-11-03",
+  "mode": "anonymous HTTPS; production Upstash, live OpenAI and provider SSE",
+  "health": true,
+  "reset_isolated": true,
+  "cases": [
+    {
+      "input": "Pode trazer nesse valor sugerido.",
+      "trace_id": "5bf5052e-0d21-4b1a-bbc9-faeb4fa5dbb2",
+      "search": {
+        "category_id": 4,
+        "category_ids": [
+          4
+        ],
+        "categories": [
+          {
+            "category_id": 4,
+            "name": "Teclados e Pianos",
+            "label": "Teclados e Pianos",
+            "illustration": "/assets/instruments.svg#teclado"
+          }
+        ],
+        "name": "Teclados e Pianos",
+        "label": "Teclados e Pianos",
+        "illustration": "/assets/instruments.svg#teclado",
+        "max_price": "1127.00"
+      },
+      "product_ids": [
+        142
+      ],
+      "first_delta_seconds": 2.865,
+      "total_seconds": 4.012,
+      "events": [
+        "accepted",
+        "delta",
+        "done",
+        "progress"
+      ],
+      "passed": true
+    },
+    {
+      "input": "Agora quero violões até seiscentos reais.",
+      "trace_id": "d93bac8b-1620-4eae-a621-a34f49778bbb",
+      "search": {
+        "category_id": 5,
+        "category_ids": [
+          5
+        ],
+        "categories": [
+          {
+            "category_id": 5,
+            "name": "Violões",
+            "label": "Violões",
+            "illustration": "/assets/instruments.svg#violao"
+          }
+        ],
+        "name": "Violões",
+        "label": "Violões",
+        "illustration": "/assets/instruments.svg#violao",
+        "max_price": "600.00"
+      },
+      "product_ids": [
+        81,
+        83,
+        85,
+        88
+      ],
+      "first_delta_seconds": 3.043,
+      "total_seconds": 4.469,
+      "events": [
+        "accepted",
+        "delta",
+        "done",
+        "progress"
+      ],
+      "passed": true
+    },
+    {
+      "input": "Quero instrumentos de qualquer categoria até mil reais.",
+      "trace_id": "66a019c8-ad46-4f26-bcc5-73341a59f2e0",
+      "search": {
+        "category_id": null,
+        "category_ids": [],
+        "categories": [],
+        "name": "Todos os instrumentos",
+        "label": "Todos os instrumentos",
+        "illustration": "/assets/instruments.svg#generico",
+        "max_price": "1000.00"
+      },
+      "product_ids": [
+        81,
+        116,
+        82,
+        117
+      ],
+      "first_delta_seconds": 2.596,
+      "total_seconds": 4.003,
+      "events": [
+        "accepted",
+        "delta",
+        "done",
+        "progress"
+      ],
+      "passed": true
+    }
+  ],
+  "anonymous_browser_passed": true,
+  "regression_note": "Initial SSE deployment exposed thread-local Redis ownership mismatch; fixed and verified with real Redis integration and these production turns.",
+  "remote_langsmith_verified": true,
+  "last_turn_metrics": {
+    "cached_tokens": 1792,
+    "cost_usd": 0.0024048,
+    "duration_ms": 3097.41,
+    "first_token_ms": 1986.73,
+    "input_tokens": 6620,
+    "known_cost_usd": 0.0024048,
+    "llm_calls": 3,
+    "ls_run_depth": 0,
+    "output_tokens": 184,
+    "status": "ok",
+    "thread_id": "b5f445a2faeb15e97c70af70",
+    "total_tokens": 6804,
+    "usage_missing": 0
+  }
+}

@@ -1,6 +1,6 @@
 # Orquestração com LangChain e LangGraph
 
-O endpoint `POST /api/chat` executa dois grafos compilados. LangChain fornece o modelo de chat, mensagens e ferramentas com schemas Pydantic. LangGraph controla classificação, encaminhamento e o ciclo de ferramentas. CSVs, busca híbrida, cálculos de preço e verificação de pedidos permanecem funções de domínio em Python.
+Os endpoints `POST /api/chat` e `POST /api/chat/stream` compartilham a execução dos dois grafos compilados. LangChain fornece o modelo de chat, mensagens e ferramentas com schemas Pydantic. LangGraph controla classificação, encaminhamento e o ciclo de ferramentas. CSVs, busca híbrida, cálculos de preço e verificação de pedidos permanecem funções de domínio em Python.
 
 ## Grafo de atendimento
 
@@ -50,7 +50,7 @@ flowchart LR
     tools --> model
 ```
 
-`AgentState` carrega mensagens LangChain, contador de gerações e resposta. Cada turno admite até quatro gerações neste subgrafo e até três chamadas de ferramentas por geração. A classificação é uma chamada adicional. Comparação e políticas podem realizar uma consulta determinística anterior ao subgrafo. Tentativas de ultrapassar os limites geram erro controlado, em vez de continuar o ciclo. Há também limites de recursão nos grafos.
+`AgentState` carrega mensagens LangChain, contador de gerações e resposta. Cada turno admite até quatro gerações neste subgrafo e até três chamadas de ferramentas por geração. A classificação é uma chamada adicional; buscas conversacionais fazem também uma leitura isolada do escopo da mensagem atual. Comparação e políticas podem realizar uma consulta determinística anterior ao subgrafo. Tentativas de ultrapassar os limites geram erro controlado, em vez de continuar o ciclo. Há também limites de recursão nos grafos.
 
 `app/langchain_tools.py` define sete ferramentas LangChain com schemas estritos:
 
@@ -68,7 +68,7 @@ Argumentos extras ou de tipo incorreto produzem resultado `invalid` sem chamar a
 
 ## Modelo e transporte
 
-`app/langchain_model.py` implementa `BaseChatModel`, `bind_tools`, `HumanMessage`, `AIMessage`, `SystemMessage` e `ToolMessage`. O adaptador usa o transporte `app/openrouter.py`, preservando IDs nativos de chamadas e a política existente: modelo aprovado por provedor, repetição limitada e nenhuma repetição automática para HTTP 429.
+`app/langchain_model.py` implementa `BaseChatModel`, `bind_tools`, `HumanMessage`, `AIMessage`, `SystemMessage` e `ToolMessage`. O adaptador usa o transporte `app/chat_transport.py`, com `app/openai_provider.py` por padrão e OpenRouter opcional, preservando IDs nativos de chamadas e a política existente: modelo aprovado por provedor, repetição limitada e nenhuma repetição automática para HTTP 429.
 
 O transporte legado é mantido como fronteira HTTP testada; o antigo loop manual de quatro rodadas foi substituído pelo grafo. A adaptação de mensagens permite reutilizar os testes do transporte. O endpoint usa a API direta da OpenAI por padrão (`gpt-4.1-mini`), selecionada por `build_provider()`. O transporte Chat Completions limitado é compartilhado; OpenRouter permanece opcional, gratuito e selecionado explicitamente. Não há fallback entre provedores.
 
@@ -147,3 +147,13 @@ Validação real de 3/11/2026: duas conversas completas com seis turnos cada e q
 ```
 
 Esses comandos consomem tokens do provedor configurado. A verificação visual sem LLM está em `tests/browser_category_scope.py` e inicia seu próprio servidor temporário.
+
+## Plano semântico, progresso e observabilidade
+
+O classificador retorna JSON estruturado com intenção, consulta completa e operação semântica de orçamento: `keep`, `set`, `clear` ou `accept_offer`. Uma leitura independente da mensagem atual resolve categorias nomeadas ou pedido de catálogo geral; não vê menções antigas como nomes atuais. O backend valida IDs e a citação literal para ampliar o catálogo, preserva o escopo anterior em referências e só aplica uma proposta se a categoria corresponder. Não há listas de frases de aceitação em Python.
+
+O plano executa a busca antes da redação e retira `search_catalog` das ferramentas dessa geração, impedindo substituir silenciosamente o resultado. Recuperação de orçamento sem produtos usa a mensagem factual calculada em Python e não precisa de reescrita pela LLM.
+
+A rota SSE publica recebimento, etapas reais e deltas do provedor. Classificadores/planejadores JSON e argumentos de ferramentas ficam privados. Cards, fontes e estado só finalizam no término; cancelamento/reset descartam parciais. Aquisição, persistência e liberação do lease Redis ocorrem no mesmo worker.
+
+LangSmith recebe spans explícitos e sanitizados, sem prompts ou dados de pedidos. Usage real alimenta contagem de tokens, cache e estimativa de custo. [Método, privacidade e validação real](observabilidade-e-avaliacao.md).

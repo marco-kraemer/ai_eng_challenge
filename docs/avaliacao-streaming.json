@@ -1,0 +1,37 @@
+{
+  "first_delta_seconds": 2.401,
+  "trace_id": "9491c4c5-716b-43d7-aecf-40d4b534c4fc",
+  "project_id": "eeb79947-3ea8-4418-9b38-412878f20978",
+  "event_types": [
+    "accepted",
+    "delta",
+    "done",
+    "progress"
+  ],
+  "products": [
+    81,
+    82,
+    83,
+    84
+  ],
+  "remote_spans": 8,
+  "remote_model_spans": 3,
+  "remote_metrics": {
+    "cached_tokens": 3712,
+    "cost_usd": 0.0019356,
+    "duration_ms": 3179.51,
+    "first_token_ms": 2351.95,
+    "input_tokens": 6883,
+    "known_cost_usd": 0.0019356,
+    "llm_calls": 3,
+    "ls_run_depth": 0,
+    "output_tokens": 185,
+    "status": "ok",
+    "thread_id": "27a24ca82f5e90fd42c97987",
+    "total_tokens": 7068,
+    "usage_missing": 0
+  },
+  "remote_verification_total_seconds": 10.306,
+  "stream_total_seconds": 3.677,
+  "measurement_note": "Local HTTP streaming and real OpenAI; total verification includes subsequent eventual-consistency polling of LangSmith. Captured before final wording refinements."
+}
