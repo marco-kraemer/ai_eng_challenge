@@ -2,6 +2,7 @@
 
 Runs an isolated ephemeral local server; never reads or sends an OpenRouter key.
 """
+import json
 import socket
 import threading
 import time
@@ -15,7 +16,7 @@ from app.web import app
 class ScriptedModel:
     def generate(self, contents, tools, **options):
         if options.get('system'):
-            question = contents[-1]['parts'][0]['text'].lower()
+            question = json.loads(contents[-1]['parts'][0]['text'])['current_message'].lower()
             label = ('compare' if 'diferença' in question else 'policies' if 'horas' in question
                      else 'order' if 'pedido' in question else 'offtopic')
             return {'parts': [{'text': label}]}
@@ -47,7 +48,9 @@ def run():
                 page.on('pageerror', lambda error: errors.append(str(error)))
                 page.goto(f'http://127.0.0.1:{port}')
                 page.locator('[data-intent=products]').click()
-                page.get_by_role('button', name='Violões', exact=True).click()
+                category_button = page.get_by_role('button', name='Violões', exact=True)
+                if category_button.get_attribute('aria-pressed') != 'true': category_button.click()
+                page.get_by_role('button', name='Continuar', exact=True).click()
                 page.get_by_label('Valor máximo (R$)').fill('1000')
                 page.get_by_role('button', name='Ver instrumentos', exact=True).click()
                 page.locator('.product').first.wait_for()

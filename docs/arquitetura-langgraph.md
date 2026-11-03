@@ -126,3 +126,22 @@ Avaliação opcional com o provedor real (envia conversas sintéticas e consome 
 ```
 
 O script cobre orçamento em aberto com diferentes formulações, aceitação e recusa de uma proposta. Registra as ferramentas escolhidas e verifica categoria, orçamento, produtos reais e estado pendente; não comprova todas as afirmações do texto gerado nem mede disponibilidade geral do provedor.
+
+## Escopo da busca por turno
+
+O classificador também produz um plano de consulta estruturado, com JSON Schema estrito na API da OpenAI. A mensagem atual, o histórico e o contexto anterior são campos separados; menções antigas não representam automaticamente um novo pedido. A taxonomia e os IDs são lidos do CSV e enviados ao modelo. Não há dicionário de frases em Python para identificar instrumentos.
+
+A LLM decide entre tipos nomeados agora, referência às opções anteriores ou catálogo inteiro. Uma consulta aceita um ID, vários IDs em união, ou nenhum filtro de categoria. Pydantic valida os argumentos e o domínio verifica os IDs. O estado da busca é substituído após uma consulta válida; propostas anteriores não se tornam filtros obrigatórios.
+
+O grafo executa o plano antes da redação e entrega o resultado como evidência de ferramenta. Nessa resposta, a ferramenta de busca deixa de estar disponível para a etapa de redação, impedindo que uma segunda consulta substitua a primeira. A recusa de uma proposta também pode ser planejada, para não recriar a proposta com outra busca. A mesma seleção alimenta cards, resumo, estado e cálculo de menor preço. A mensagem de recuperação por orçamento é preservada do domínio, com o preço calculado sobre o escopo consultado.
+
+A seleção visual permite uma ou mais categorias e **Todos os instrumentos**, seguida de **Continuar** e orçamento opcional. Buscas amplas intercalam categorias com resultados disponíveis antes de paginar, evitando mostrar apenas a primeira categoria do CSV. A alteração de orçamento preserva o conjunto selecionado.
+
+Validação real de 3/11/2026: duas conversas completas com seis turnos cada e quatro continuações de orçamento, 16/16 nos critérios registrados. As formulações da segunda conversa não estão copiadas nos exemplos do prompt. O relatório é [avaliacao-categorias-contexto.json](avaliacao-categorias-contexto.json); ele não comprova ausência de erros de interpretação nem a correção de toda afirmação gerada.
+
+```bash
+.venv/bin/python scripts/evaluate_category_context.py --live --output /tmp/categorias.json
+.venv/bin/python scripts/evaluate_category_context.py --live --variant paraphrases --output /tmp/categorias-parafrases.json
+```
+
+Esses comandos consomem tokens do provedor configurado. A verificação visual sem LLM está em `tests/browser_category_scope.py` e inicia seu próprio servidor temporário.

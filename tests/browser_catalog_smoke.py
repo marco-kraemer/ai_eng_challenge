@@ -17,7 +17,9 @@ with sync_playwright() as p:
     page.screenshot(path='/tmp/emporio-ink-picker-desktop.png')
     page.set_viewport_size({'width':390,'height':844})
     page.screenshot(path='/tmp/emporio-ink-picker-mobile.png')
-    page.get_by_role('button',name='Violões',exact=True).click()
+    category_button = page.get_by_role('button',name='Violões',exact=True)
+    if category_button.get_attribute('aria-pressed') != 'true': category_button.click()
+    page.get_by_role('button', name='Continuar', exact=True).click()
     page.get_by_label('Valor máximo (R$)').fill('10')
     with page.expect_response(lambda response:'/api/catalog/search' in response.url) as empty:
         page.get_by_role('button',name='Ver instrumentos',exact=True).click()

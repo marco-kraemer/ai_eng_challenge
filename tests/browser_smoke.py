@@ -35,11 +35,15 @@ with sync_playwright() as p:
     page.set_viewport_size({'width':390,'height':844})
     assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
     page.screenshot(path='/tmp/emporio-customer-instruments-mobile.png')
-    page.get_by_role('button',name='Violões',exact=True).click()
+    category_button = page.get_by_role('button',name='Violões',exact=True)
+    if category_button.get_attribute('aria-pressed') != 'true': category_button.click()
+    page.get_by_role('button', name='Continuar', exact=True).click()
     page.get_by_role('heading',name='Quanto você quer gastar?').wait_for()
     assert page.get_by_label('Valor máximo (R$)').input_value()==''
     page.get_by_role('button',name='← Voltar',exact=True).click()
-    page.get_by_role('button',name='Violões',exact=True).click()
+    category_button = page.get_by_role('button',name='Violões',exact=True)
+    if category_button.get_attribute('aria-pressed') != 'true': category_button.click()
+    page.get_by_role('button', name='Continuar', exact=True).click()
     assert page.get_by_label('Valor máximo (R$)').input_value()==''
     page.get_by_role('button',name='Ver instrumentos',exact=True).click()
     assert page.get_by_text('Informe um valor válido',exact=False).is_visible()
@@ -65,7 +69,9 @@ with sync_playwright() as p:
     assert page.locator('.draft-box').count()==0
     page.get_by_role('button',name='Nova conversa',exact=True).click()
     page.locator('[data-intent=products]').click()
-    page.get_by_role('button',name='Guitarras',exact=True).click()
+    category_button = page.get_by_role('button',name='Guitarras',exact=True)
+    if category_button.get_attribute('aria-pressed') != 'true': category_button.click()
+    page.get_by_role('button', name='Continuar', exact=True).click()
     with page.expect_response(lambda response:'/api/catalog/search' in response.url) as no_budget:
         page.get_by_role('button',name='Ainda não defini um valor',exact=True).click()
     assert 'max_price' not in no_budget.value.request.post_data_json

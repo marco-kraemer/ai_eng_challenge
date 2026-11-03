@@ -40,7 +40,7 @@ O modelo local usa aproximadamente 130 MB de disco e o processo de avaliação t
 
 ## Usar
 
-- **Encontrar um instrumento:** mostra apenas categorias com produtos ativos em estoque, com esboços monocromáticos. Escolha o instrumento e depois um orçamento, com valores sugeridos, campo livre ou “Ainda não defini um valor”. A busca consulta diretamente o catálogo, sem chamada ao modelo e sem instrumento/preço predefinidos.
+- **Encontrar um instrumento:** mostra apenas categorias com produtos ativos em estoque, com esboços monocromáticos. Selecione uma ou mais categorias, ou **Todos os instrumentos**, clique em **Continuar** e depois escolha um orçamento, com valores sugeridos, campo livre ou “Ainda não defini um valor”. A busca consulta diretamente o catálogo, sem chamada ao modelo e sem instrumento/preço predefinidos.
 - **Acompanhar meu pedido:** abre a verificação de número e e-mail da compra. Retorna apenas status, previsão e rastreio; as credenciais do formulário não vão ao modelo.
 - **Dúvidas sobre minha compra:** oferece assuntos como troca/devolução, defeito, entrega, pagamento e garantia. A pergunta é enviada somente depois de escolher o assunto.
 - **Informações da loja:** oferece horários, endereço e contato, sem mandar uma pergunta arbitrária ao abrir o menu.

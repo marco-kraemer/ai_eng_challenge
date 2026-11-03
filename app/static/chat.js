@@ -72,7 +72,7 @@ async function openFinder() {
   if (send.disabled) return;
   const load = ++pickerLoad, currentGeneration = generation;
   welcome.hidden = true; messages.hidden = true; picker.hidden = false;
-  pickerHeading('Qual instrumento você procura?', 'Escolha uma categoria para ver as opções.', '1. Instrumento · 2. Orçamento');
+  pickerHeading('Qual instrumento você procura?', 'Escolha uma ou mais categorias, ou veja todos os instrumentos.', '1. Instrumentos · 2. Orçamento');
   const loading = element('p', '', 'Carregando instrumentos…');
   loading.setAttribute('role', 'status'); picker.append(loading);
   try {
@@ -90,17 +90,47 @@ async function openFinder() {
   }
 }
 function renderCategories() {
-  pickerHeading('Qual instrumento você procura?', 'Escolha uma categoria para ver as opções.', '1. Instrumento · 2. Orçamento');
+  pickerHeading('Qual instrumento você procura?', 'Escolha uma ou mais categorias, ou veja todos os instrumentos.', '1. Instrumentos · 2. Orçamento');
+  const selectedIds = selectedCategory ? (selectedCategory.category_ids || [selectedCategory.category_id]) : [];
+  const isAll = selectedCategory !== null && selectedIds.length === 0;
+  const options = [];
+  const all = element('button', 'all-instruments', 'Todos os instrumentos');
+  all.type = 'button'; all.setAttribute('aria-pressed', String(isAll));
+  all.addEventListener('click', () => {
+    selectedCategory = {category_id: null, category_ids: [], categories: [], name: 'Todos os instrumentos', label: 'Todos os instrumentos', illustration: '/assets/instruments.svg#generico'};
+    selectedBudget = null; updateSelection();
+  });
   const grid = element('div', 'instrument-grid');
   for (const category of categories) {
     const button = element('button', 'instrument-option');
     button.type = 'button'; button.setAttribute('data-category-id', category.category_id);
+    button.setAttribute('aria-pressed', String(!isAll && selectedIds.includes(category.category_id)));
     button.append(instrumentImage(category.illustration), element('strong', '', category.label));
-    button.addEventListener('click', () => {if (selectedCategory?.category_id !== category.category_id) selectedBudget = null; selectedCategory = category; renderBudget();});
-    grid.append(button);
+    button.addEventListener('click', () => {
+      const ids = selectedCategory?.category_ids || (selectedCategory?.category_id ? [selectedCategory.category_id] : []);
+      const next = ids.includes(category.category_id) ? ids.filter(id => id !== category.category_id) : [...ids, category.category_id];
+      const chosen = categories.filter(item => next.includes(item.category_id));
+      const label = chosen.map(item => item.label).join(' e ');
+      selectedCategory = chosen.length ? {category_id: chosen.length === 1 ? chosen[0].category_id : null,
+        category_ids: chosen.map(item => item.category_id), categories: chosen, name: label, label,
+        illustration: chosen.length === 1 ? chosen[0].illustration : '/assets/instruments.svg#generico'} : null;
+      selectedBudget = null; updateSelection();
+    });
+    options.push([button, category.category_id]); grid.append(button);
   }
+  const summary = element('p', 'category-selection'); summary.setAttribute('role', 'status');
+  const next = element('button', 'send category-continue', 'Continuar'); next.type = 'button';
+  next.addEventListener('click', () => {if (selectedCategory) renderBudget();});
+  function updateSelection() {
+    const ids = selectedCategory?.category_ids || [];
+    all.setAttribute('aria-pressed', String(selectedCategory !== null && ids.length === 0));
+    for (const [button, id] of options) button.setAttribute('aria-pressed', String(ids.includes(id)));
+    next.disabled = selectedCategory === null;
+    summary.textContent = selectedCategory ? selectedCategory.label : 'Selecione pelo menos uma categoria para continuar.';
+  }
+  updateSelection();
   if (!categories.length) picker.append(element('p', 'empty-catalog', 'Não há instrumentos em estoque no momento. Você pode consultar as informações da loja ou voltar mais tarde.'));
-  picker.append(grid);
+  else picker.append(all, grid, summary, next);
 }
 function parseBudget(raw) {
   let value = raw.trim().replace(/^R\$\s*/, '').replace(/\s/g, '');
@@ -149,7 +179,7 @@ function searchSelectedCatalog(budget) {
   const category = selectedCategory;
   selectedBudget = budget;
   const message = 'Quero ver ' + category.name.toLocaleLowerCase('pt-BR') + (budget === null ? '. Ainda não defini um orçamento.' : ' até ' + money.format(Number(budget)) + '.');
-  const payload = {category_id: category.category_id};
+  const payload = category.category_id ? {category_id: category.category_id} : {category_ids: category.category_ids || []};
   if (budget !== null) payload.max_price = budget;
   return requestReply(message, '/api/catalog/search', payload);
 }
@@ -370,6 +400,7 @@ async function requestReply(displayMessage, url, payload) {
     pending.remove();
     if (response.ok) {
       conversationId = data.conversation_id || conversationId;
+      if (data.search) {selectedCategory = data.search; selectedBudget = data.search.max_price;}
       add(data.message, false, data.products || [], data.sources || [], data.actions || [], Boolean(data.order_verification_required), data.contacts || [], data.search || null, Boolean(data.comparison));
     } else {
       const explanation = typeof data.detail === 'string' ? data.detail : 'Não foi possível concluir a consulta. Confira sua mensagem e tente novamente.';

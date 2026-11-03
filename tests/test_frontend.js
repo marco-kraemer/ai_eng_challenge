@@ -20,7 +20,7 @@ function descendants(node) { return [node, ...(node.children || []).flatMap(desc
     querySelector: selector => { if (!nodes.has(selector)) nodes.set(selector, new Element()); return nodes.get(selector); },
     querySelectorAll: () => [], createElement: tag => new Element(tag), createElementNS: (ns, tag) => new Element(tag), createTextNode: text => ({textContent: text}),
   }, fetch: async (url, options = {}) => {
-    if (url === '/api/categories') return {ok: true, json: async () => ({categories: [{category_id: 1, name: 'Guitarras', label: 'Guitarras', illustration: '/assets/instruments.svg#guitarra'}]})};
+    if (url === '/api/categories') return {ok: true, json: async () => ({categories: [{category_id: 1, name: 'Guitarras', label: 'Guitarras', illustration: '/assets/instruments.svg#guitarra'}, {category_id: 5, name: 'Violões', label: 'Violões', illustration: '/assets/instruments.svg#violao'}]})};
     if (url === '/api/conversation/reset') {resets.push(JSON.parse(options.body)); return {ok: true};}
     requests.push({url, ...JSON.parse(options.body)});
     return {ok: true, json: async () => await replies.shift()};
@@ -67,5 +67,24 @@ function descendants(node) { return [node, ...(node.children || []).flatMap(desc
   replies.push({message: 'Opções sem limite definido.', products: [], sources: []});
   await vm.runInContext('searchSelectedCatalog(null)', context);
   assert.equal(Object.hasOwn(requests.at(-1), 'max_price'), false);
+  await vm.runInContext('openFinder()', context);
+  let buttons = descendants(nodes.get('#picker'));
+  let first = buttons.find(n => n.attributes?.get('data-category-id') === '1');
+  const second = buttons.find(n => n.attributes?.get('data-category-id') === '5');
+  assert.equal(first.attributes.get('aria-pressed'), 'true');
+  const requestCount = requests.length;
+  second.events.get('click')();
+  assert.equal(requests.length, requestCount, 'Toggling categories must not query or navigate away');
+  replies.push({message: 'Duas categorias.', products: [], sources: []});
+  await vm.runInContext('searchSelectedCatalog("1000.00")', context);
+  assert.deepEqual(requests.at(-1).category_ids, [1, 5]);
+  assert.equal(Object.hasOwn(requests.at(-1), 'category_id'), false);
+  await vm.runInContext('openFinder()', context);
+  buttons = descendants(nodes.get('#picker'));
+  buttons.find(n => n.className === 'all-instruments').events.get('click')();
+  replies.push({message: 'Todos os instrumentos.', products: [], sources: []});
+  await vm.runInContext('searchSelectedCatalog("1000.00")', context);
+  assert.deepEqual(requests.at(-1).category_ids, []);
+  assert.equal(Object.hasOwn(requests.at(-1), 'category_id'), false);
   console.log('OK: customer picker, BRL values, explicit category/budget, no default budget, conversation IDs, sources and late-response reset.');
 })().catch(error => {console.error(error); process.exitCode = 1;});
