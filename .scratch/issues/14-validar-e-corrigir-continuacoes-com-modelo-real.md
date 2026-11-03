@@ -5,8 +5,8 @@ Concluir a correção de interpretação contextual de orçamento e propostas. A
 
 **Status:** pending
 
-**Dependência atual:**
-Cota disponível no OpenRouter. O provedor retornou HTTP 429 na revalidação. Não considerar esse erro uma falha semântica nem marcar o ticket concluído apenas porque os testes com inferência simulada passam.
+**Bloqueado por:**
+- 17 — Validação ampla do agente, reaproveitando as evidências de contexto já obtidas.
 
 ## Evidência e estado atual
 - Atalhos por frases para orçamento e confirmação foram removidos.
