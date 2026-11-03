@@ -17,6 +17,8 @@ from langchain_core.utils.function_calling import convert_to_openai_tool
 from pydantic import Field
 
 from app.provider import SYSTEM
+from app.telemetry import span, safe_metadata
+from app.metrics import record_usage
 
 
 def history_messages(history: list[dict]) -> list[BaseMessage]:
@@ -74,7 +76,14 @@ class StoreChatModel(BaseChatModel):
         options = {'system': system} if system != SYSTEM else {}
         if kwargs.get('response_format') is not None:
             options['response_format'] = kwargs['response_format']
-        response = self.transport.generate(contents, kwargs.get('tools', []), **options)
+        stage = (kwargs.get('response_format') or {}).get('json_schema', {}).get('name', 'answer')
+        with span('model.' + stage, 'llm', provider=type(self.transport).__name__) as record:
+            try:
+                response = self.transport.generate(contents, kwargs.get('tools', []), **options)
+            except Exception:
+                record_usage(None, None, record)
+                raise
+            record_usage(response.get('_usage'), response.get('_model'), record)
         native = response.get('_openrouter_message', {})
         native_calls = native.get('tool_calls', [])
         tool_calls: list[ToolCall] = []

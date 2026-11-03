@@ -15,6 +15,15 @@ def name_tokens(value: str) -> set[str]:
     return set(re.findall(r'[a-z0-9]+', normalized))
 
 
+def data_warnings(item: dict) -> list[str]:
+    """Flag an objective inconsistency in the supplied data, never infer user intent."""
+    keys = str(item.get('specs', {}).get('keys', ''))
+    described = re.search(r'\b(\d+)\s+teclas\b', item.get('description', ''), re.IGNORECASE)
+    if keys.isdigit() and described and int(keys) != int(described[1]):
+        return [f'A descrição informa {described[1]} teclas, mas as especificações indicam {keys}. Confirme a ficha e o modelo com a equipe antes de comprar.']
+    return []
+
+
 class Catalog:
     def __init__(self, directory: Path):
         self.directory = directory
@@ -58,6 +67,8 @@ class Catalog:
                         'status': row['status'], 'description': row['description'],
                         'specs': json.loads(row['specs']),
                     })
+            for item in matches:
+                item['warnings'] = data_warnings(item)
             # Broad searches show a representative mix; paginate only after filtering.
             if category_id is None and not terms:
                 groups: dict[int, list] = {}
@@ -92,6 +103,7 @@ class Catalog:
                 item={'product_id':identifier,'name':row['name'],'price_brl':str(price.quantize(Decimal('0.01'))),
                       'category_id':int(row['category_id']),'status':row['status'],'stock_quantity':int(row['stock_quantity']),
                       'description':row['description'],'specs':json.loads(row['specs'])}
+                item['warnings'] = data_warnings(item)
                 if ceiling is not None:
                     item['budget_difference_brl']=str(max(price-ceiling,Decimal(0)).quantize(Decimal('0.01')))
                 items.append(item)

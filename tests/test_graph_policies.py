@@ -12,7 +12,7 @@ class GraphPolicyTests(unittest.TestCase):
     def test_policy_intent_forces_retrieval_before_generation(self):
         provider = Mock()
         def generate(contents, tools, **options):
-            if options.get('system'):
+            if options.get('response_format'):
                 return {'parts': [{'text': 'policies'}]}
             payload = contents[-1]['parts'][0]['functionResponse']['response']
             self.assertEqual(payload, EVIDENCE)

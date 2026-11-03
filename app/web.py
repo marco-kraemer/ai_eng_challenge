@@ -3,7 +3,7 @@ from typing import Annotated
 import ipaddress
 import os
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import HTMLResponse, Response, JSONResponse, FileResponse
+from fastapi.responses import HTMLResponse, Response, JSONResponse, FileResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from app.catalog import Catalog
 from app.catalog_flow import catalog_reply, INSTRUMENT_ART, CATEGORY_LABELS
@@ -14,6 +14,7 @@ from app.actions import next_actions, resolve_action
 from app.assistant import StoreAssistant
 from app.llm import build_provider
 from app.runtime import build_backends
+from app.telemetry import turn, traced_request, event_sink, raise_if_cancelled, StreamCancelled
 from app.redis_state import StorageUnavailable
 from starlette.concurrency import run_in_threadpool
 from dotenv import load_dotenv
@@ -44,7 +45,7 @@ def client_actor(request):
 
 @app.middleware('http')
 async def protect_requests(request,call_next):
-    limit=CHAT_RATE if request.url.path in ('/api/chat','/api/catalog/search','/api/catalog/compare') else ORDER_RATE if request.url.path=='/api/orders/verify' else None
+    limit=CHAT_RATE if request.url.path in ('/api/chat','/api/chat/stream','/api/catalog/search','/api/catalog/compare') else ORDER_RATE if request.url.path=='/api/orders/verify' else None
     if request.method=='POST' and limit is not None:
         actor=client_actor(request)
         try:
@@ -74,8 +75,9 @@ def index():
 def health():
     return {'status': 'ok'}
 
-@app.post('/api/chat')
-def reply(message: Message):
+def acquire_chat(message: Message):
+    if not message.action_id and not message.message.strip():
+        raise HTTPException(422, 'Envie uma mensagem de 1 a 2000 caracteres.')
     token=conversations.open(message.conversation_id)
     busy=conversations.acquire(token)
     if busy is None:
@@ -88,17 +90,14 @@ def reply(message: Message):
     if not available:
         busy.release()
         raise HTTPException(429,'O atendimento está ocupado. Tente em alguns instantes.',headers={'Retry-After':'5'})
+    return token, busy
+
+
+@app.post('/api/chat')
+def reply(message: Message):
+    token, busy = acquire_chat(message)
     try:
-        state=conversations.state(token)
-        text=resolve_action(message.action_id,state) if message.action_id else message.message
-        assistant=StoreAssistant(build_provider(), Catalog(ROOT / 'data'),state=state)
-        result=assistant.reply(text,history=conversations.history(token))
-        result.setdefault('actions',next_actions(result))
-        state=assistant.context()
-        state['allowed_actions']=[action['id'] for action in result['actions']]
-        conversations.append(token,text,result['message'],state)
-        result['conversation_id']=token
-        return result
+        return answer_turn(message, token)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from None
     except RuntimeError as exc:
@@ -109,6 +108,96 @@ def reply(message: Message):
     finally:
         busy.release()
         chat_slots.release()
+
+def answer_turn(message: Message, token: str):
+    with turn(token) as trace:
+        state=conversations.state(token)
+        text=resolve_action(message.action_id,state) if message.action_id else message.message
+        assistant=StoreAssistant(build_provider(), Catalog(ROOT / 'data'),state=state)
+        result=assistant.reply(text,history=conversations.history(token))
+        result.setdefault('actions',next_actions(result))
+        state=assistant.context()
+        state['allowed_actions']=[action['id'] for action in result['actions']]
+        raise_if_cancelled()
+        conversations.append(token,text,result['message'],state)
+        result['conversation_id']=token
+        result['trace_id'] = trace.id
+        return result
+
+
+PUBLIC_PROGRESS = {
+    'faq': 'Consultando informações da loja…', 'classify': 'Entendendo seu pedido…',
+    'search_catalog': 'Consultando instrumentos…', 'search_policies': 'Consultando o manual da loja…',
+    'retrieve_policies': 'Consultando o manual da loja…', 'compare_products': 'Comparando instrumentos…',
+    'search_promotions': 'Consultando ofertas…', 'store_contacts': 'Consultando os contatos da loja…',
+}
+
+
+@app.post('/api/chat/stream')
+def stream_reply(message: Message):
+    import asyncio
+    import queue
+    import threading
+    import json
+    token, busy = acquire_chat(message)
+    events: queue.Queue = queue.Queue(maxsize=256)
+    cancelled = threading.Event()
+
+    def publish(event):
+        while not cancelled.is_set():
+            try:
+                events.put(event, timeout=.1)
+                return
+            except queue.Full:
+                continue
+        raise StreamCancelled('Request cancelled')
+
+    def receive(event):
+        if event['type'] == 'progress':
+            publish({'type': 'progress', 'label': PUBLIC_PROGRESS.get(event['stage'], 'Preparando sua resposta…')})
+        elif event['type'] in ('delta', 'answer_reset'):
+            publish(event)
+
+    def work():
+        terminal = None
+        try:
+            with event_sink(receive, cancelled):
+                result = answer_turn(message, token)
+                terminal = {'type': 'done', 'result': result}
+        except StreamCancelled:
+            pass
+        except Exception as error:
+            status = 422 if isinstance(error, ValueError) else 429 if str(error).startswith('Limite') else 503
+            detail = str(error) if status in (422, 429) else 'Atendimento indisponível no momento. Tente mais tarde.'
+            terminal = {'type': 'error', 'status': status, 'detail': detail}
+        finally:
+            busy.release()
+            chat_slots.release()
+            if not cancelled.is_set():
+                if terminal:
+                    publish(terminal)
+                publish(None)
+
+    async def output():
+        worker = threading.Thread(target=work, daemon=True)
+        worker.start()
+        try:
+            yield 'data: ' + json.dumps({'type': 'accepted', 'conversation_id': token}) + '\n\n'
+            while True:
+                try:
+                    event = await asyncio.to_thread(events.get, True, 1)
+                except queue.Empty:
+                    yield ': keep-alive\n\n'
+                    continue
+                if event is None:
+                    break
+                yield 'data: ' + json.dumps(event, ensure_ascii=False) + '\n\n'
+        finally:
+            cancelled.set()
+
+    return StreamingResponse(output(), media_type='text/event-stream',
+        headers={'Cache-Control': 'no-store', 'X-Accel-Buffering': 'no'})
+
 
 class Reset(BaseModel):
     conversation_id: str = Field(min_length=1,max_length=64)
@@ -124,6 +213,7 @@ class OrderVerification(BaseModel):
     email: str = Field(min_length=3,max_length=254)
 
 @app.post('/api/orders/verify')
+@traced_request
 def verify_order(body: OrderVerification):
     result=Orders(ROOT/'data').verify(body.order_id,body.email)
     if result['status']=='error':
@@ -162,6 +252,7 @@ class CatalogSelection(BaseModel):
         return self
 
 @app.post('/api/catalog/search')
+@traced_request
 def selected_catalog(selection: CatalogSelection):
     token=conversations.open(selection.conversation_id)
     busy=conversations.acquire(token)
@@ -185,6 +276,7 @@ class ProductComparison(BaseModel):
 
 
 @app.post('/api/catalog/compare')
+@traced_request
 def selected_comparison(selection: ProductComparison):
     if len(set(selection.product_ids)) != len(selection.product_ids):
         raise HTTPException(422, 'Selecione instrumentos diferentes para comparar.')
@@ -213,6 +305,6 @@ def selected_comparison(selection: ProductComparison):
 
 @app.get('/assets/{name}')
 def client_asset(name: str):
-    media={'chat.css':'text/css','chat.js':'application/javascript'}
+    media={'chat.css':'text/css','chat.js':'application/javascript','stream.js':'application/javascript'}
     if name not in media:raise HTTPException(404)
     return FileResponse(ROOT/'app/static'/name,media_type=media[name])

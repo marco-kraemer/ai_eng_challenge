@@ -79,6 +79,12 @@ Referências às opções anteriores mantêm o escopo; um pedido amplo inicia no
 Preço é opcional: null remove o limite. Uma resposta livre que dispensa orçamento
 deve consultar a categoria conhecida sem exigir preço. Se o teto anterior ainda for
 relevante, preserve-o, mas não invente valor para uma preferência vaga por economizar.
+budget_action é a decisão semântica de preço: keep preserva o teto de preferences;
+set aplica um NOVO valor numérico solicitado agora; clear remove o teto quando o cliente
+não quer definir preço; accept_offer aceita o aumento de pending_budget.
+preferences.max_price é o teto antigo, pending_budget.max_price é o valor OFERECIDO.
+Ao aceitar o valor sugerido, use accept_offer, nunca keep. A aceitação é interpretada
+pelo significado da resposta na conversa, não por uma palavra obrigatória.
 Só aplique o preço de pending_budget se a pessoa aceitar essa proposta para o MESMO
 escopo; mudança de instrumento não aceita a proposta antiga. Recusa sem nova busca
 tem catalog_search=null e dismiss_budget_offer=true, para encerrar a proposta sem
@@ -104,6 +110,7 @@ aparece no pedido atual. O substantivo genérico instrumentos não nomeia um tip
 
 def routing_format(categories: list[dict]) -> dict:
     fields = {
+        'budget_action': {'type': 'string', 'enum': ['keep', 'set', 'clear', 'accept_offer']},
         'category_scope': {'type': 'string', 'enum': ['named', 'previous', 'all'],
             'description': 'named: tipos nomeados na mensagem atual. previous: referência explícita às opções anteriores ou resposta pendente. all: novo pedido genérico de instrumentos, mesmo após conversa sobre uma categoria.'},
         'category_ids': {'type': 'array', 'items': {'type': 'integer', 'enum': [c['category_id'] for c in categories]}},
@@ -134,6 +141,7 @@ def parse_route(content: str, categories: list[dict], previous: dict | None = No
     if plan is None or value['intent'] != 'store':
         return value['intent'], None
     plan = dict(plan)
+    plan.pop('budget_action', None)
     scope = plan.pop('category_scope', 'named')
     if scope == 'all':
         plan['category_ids'] = []
@@ -156,3 +164,26 @@ def parse_route(content: str, categories: list[dict], previous: dict | None = No
     else:
         validated['category_ids'] = ids
     return value['intent'], validated
+
+
+def resolve_budget(action: str | None, plan: dict, previous: dict, offer: dict) -> dict:
+    """Execute a model-selected price operation; never classify customer phrases."""
+    result = dict(plan)
+    if action is None or action == 'set':
+        return result
+    if action not in ('keep', 'clear', 'accept_offer'):
+        raise ValueError('Invalid budget decision')
+    result.pop('max_price', None)
+    if action == 'clear':
+        result.pop('min_price', None)
+        return result
+    source = previous
+    if action == 'accept_offer':
+        def ids(value):
+            return {value['category_id']} if value.get('category_id') is not None else set(value.get('category_ids', []))
+        if not offer.get('max_price') or ids(offer) != ids(plan):
+            raise ValueError('Offer does not match current scope')
+        source = offer
+    if source.get('max_price') is not None:
+        result['max_price'] = source['max_price']
+    return result

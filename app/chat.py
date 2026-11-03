@@ -11,6 +11,7 @@ from app.policy_service import get_policy_index
 from app.langchain_model import StoreChatModel, history_messages
 from app.langchain_tools import build_tools
 from app.agent_graph import build_agent_graph
+from app.telemetry import span, safe_metadata
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from app.provider import SYSTEM
 
@@ -49,7 +50,7 @@ class Chat:
         self.pending_budget = dict((state or {}).get('pending_budget') or {})
         self.catalog_response: dict = {}
         self.model = StoreChatModel(transport=provider, cache=False)
-        self.tools = build_tools(self.dispatch, TOOLS)
+        self.tools = build_tools(self.observed_dispatch, TOOLS)
         self.graph = build_agent_graph(self.model, self.tools)
 
     def prepare_catalog_search(self, args: dict) -> dict:
@@ -61,6 +62,14 @@ class Chat:
 
     def prevent_catalog_replacement(self):
         self.graph = build_agent_graph(self.model, {name: tool for name, tool in self.tools.items() if name != 'search_catalog'})
+
+    def observed_dispatch(self, name: str, args: dict) -> dict:
+        with span(name, 'retriever' if name == 'search_policies' else 'tool', **safe_metadata(args)) as record:
+            result = self.dispatch(name, args)
+            if record:
+                record['extra']['metadata'].update(safe_metadata({'status': result.get('status'),
+                    'product_count': len(result.get('items', []))}))
+            return result
 
     def dispatch(self, name: str, args: dict) -> dict:
         if name == 'dismiss_budget_offer':
@@ -141,7 +150,18 @@ class Chat:
     def reply(self, message: str, history: list | None=None, *, policy_result: dict | None=None, policy_query: str="", initial_results: list[dict] | None=None) -> str:
         if not message.strip() or len(message) > 2000:
             raise ValueError('Envie uma mensagem de 1 a 2000 caracteres.')
-        messages = [SystemMessage(content=SYSTEM), *history_messages(history or [])]
+        system = SYSTEM
+        if policy_result and policy_result.get('warnings'):
+            system += ('\nA consulta atual sinalizou divergência nas fontes. Comece explicando essa incerteza. '
+                       'Não transforme condições conflitantes em uma regra única, exceção ou garantia. '
+                       'Apresente separadamente o que cada trecho diz e peça confirmação à equipe. '
+                       'Não afirme um mínimo, juros ou prazo definitivo no ponto divergente.')
+        if any(product.get('warnings') for evidence in (initial_results or [])
+               for product in evidence.get('result', {}).get('items', [])):
+            system += ('\nHá conflito objetivo na ficha de produto consultada. Comece pelo aviso '
+                       'e recomende confirmar ficha/modelo com a equipe. Não venda características '
+                       'divergentes como certas nem acrescente benefícios não declarados na fonte.')
+        messages = [SystemMessage(content=system), *history_messages(history or [])]
         # Supply the current taxonomy on every turn, including after a UI selection.
         # Category interpretation belongs to the LLM; IDs and names come from the CSV.
         taxonomy = self.catalog.categories()

@@ -12,7 +12,8 @@ from app.chat import Chat, Provider
 from app.conversations import ConversationContext
 from app.direct_faq import answer_faq
 from app.persona import IDENTITY
-from app.query_plan import PLANNING, CURRENT_SCOPE, parse_route, routing_format, current_scope_format, apply_current_scope
+from app.telemetry import observed
+from app.query_plan import PLANNING, CURRENT_SCOPE, parse_route, routing_format, current_scope_format, apply_current_scope, resolve_budget
 
 REFUSAL = 'Posso ajudar com instrumentos, produtos e atendimento da Empório da Música. Esse assunto fica fora do meu atendimento. Quer encontrar um instrumento?'
 SCOPE = '''Você é um classificador de escopo, não um atendente. Não responda ao pedido.
@@ -77,17 +78,19 @@ class StoreAssistant:
             'pending_budget': dict((state or {}).get('pending_budget') or {}),
         }
         graph = StateGraph(StoreState)
-        graph.add_node('faq', self._faq)
-        graph.add_node('classify', self._classify)
-        graph.add_node('store', self._store)
-        graph.add_node('compare', self._compare)
-        graph.add_node('retrieve_policies', self._retrieve_policies)
-        graph.add_node('grounded_answer', self._store)
-        graph.add_node('policy_unavailable', self._policy_unavailable)
-        graph.add_node('refuse', lambda state: {'result': {'message': REFUSAL, 'products': [], 'sources': []}})
-        graph.add_node('identity', lambda state: {'result': {'message': IDENTITY, 'products': [], 'sources': []}})
-        graph.add_node('order', lambda state: {'result': order_prompt()})
-        graph.add_node('return_channel', self._clarify_return)
+        def add_node(name, function):
+            graph.add_node(name, observed(name, function))
+        add_node('faq', self._faq)
+        add_node('classify', self._classify)
+        add_node('store', self._store)
+        add_node('compare', self._compare)
+        add_node('retrieve_policies', self._retrieve_policies)
+        add_node('grounded_answer', self._store)
+        add_node('policy_unavailable', self._policy_unavailable)
+        add_node('refuse', lambda state: {'result': {'message': REFUSAL, 'products': [], 'sources': []}})
+        add_node('identity', lambda state: {'result': {'message': IDENTITY, 'products': [], 'sources': []}})
+        add_node('order', lambda state: {'result': order_prompt()})
+        add_node('return_channel', self._clarify_return)
         graph.add_edge(START, 'faq')
         graph.add_conditional_edges('faq', lambda state: END if state.get('result') else 'classify', [END, 'classify'])
         branches: dict[Hashable, str] = {name: name for name in ('store', 'compare', 'refuse', 'identity', 'order', 'return_channel')}
@@ -138,6 +141,8 @@ class StoreAssistant:
                     plan = apply_current_scope(str(scope.content), plan, categories, state.get('preferences', {}), state['message'])
                 except (ValueError, TypeError, KeyError):
                     raise RuntimeError('Não consegui interpretar a seleção de instrumentos. Tente novamente.') from None
+            plan = resolve_budget(route_record.get('catalog_search', {}).get('budget_action'),
+                                  plan, state.get('preferences', {}), state.get('pending_budget', {}))
             update['catalog_plan'] = plan
         if intent == 'store' and plan is None and str(decision.content).strip().startswith('{') and json.loads(str(decision.content)).get('dismiss_budget_offer') is True:
             update['dismiss_budget_offer'] = True
@@ -197,6 +202,8 @@ class StoreAssistant:
             plan = state['catalog_plan']
             result = self.chat.prepare_catalog_search(plan)
             initial_results.append({'name': 'search_catalog', 'args': plan, 'result': result})
+        if self.chat.catalog_response.get('recovery'):
+            return {'result': self.chat.catalog_response, 'pending_budget': dict(self.chat.pending_budget)}
         answer = self.chat.reply(state['message'], history=state['history'],
                                  policy_result=state.get('policy_result'), policy_query=state.get('policy_query', ''),
                                  initial_results=initial_results)
