@@ -6,7 +6,7 @@
     "app/index.py": {
       "maxDuration": 300,
       "includeFiles": "{data/**,app/static/**,.rag-bundle/**}",
-      "excludeFiles": "{tests/**,docs/**,scripts/**,.scratch/**,.cache/**,.venv/**,**/__pycache__/**,.env,.env.*}"
+      "excludeFiles": "{tests/**,docs/**,scripts/**,.scratch/**,.cache/**,.cache-build/**,.venv/**,**/__pycache__/**,.env,.env.*}"
     }
   }
 }

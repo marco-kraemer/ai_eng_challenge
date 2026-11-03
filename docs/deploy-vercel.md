@@ -22,7 +22,7 @@ Crie ou conecte um banco **Upstash Redis**, pelo Marketplace da Vercel ou pelo p
 | `OPENROUTER_MODEL` | Modelo gratuito configurado; hoje `openrouter/free` |
 | `UPSTASH_REDIS_REST_URL` | Endpoint HTTPS REST da Upstash |
 | `UPSTASH_REDIS_REST_TOKEN` | Token REST com leitura e escrita; não usar o token somente de leitura |
-| `VERCEL_SUPPORT_LARGE_FUNCTIONS` | `1` para permitir o pacote maior caso exceda o limite padrão, em projetos elegíveis |
+| `VERCEL_SUPPORT_LARGE_FUNCTIONS` | `1`; habilitar no ambiente do build (Production e Preview). Necessário para este backend com ONNX/NumPy, em projetos elegíveis |
 
 `VERCEL`, `VERCEL_ENV` e as variáveis Git são fornecidas pela plataforma. Não copie o arquivo `.env` para o deploy. `POLICY_CACHE_DIR` não precisa ser configurado: na Vercel, o padrão é `/tmp/emporio-policy-cache`.
 
@@ -32,7 +32,7 @@ Credenciais Redis são obrigatórias na Vercel. A aplicação recusa configuraç
 
 ## 2. O que acontece no build e na execução
 
-O build baixa somente os arquivos necessários do modelo ONNX quantizado, com revisão fixada, gera embeddings dos trechos do PDF e grava `.rag-bundle`. Não chama a LLM nem acessa o Redis. O download público do modelo precisa estar disponível durante o build.
+O build baixa somente os arquivos necessários do modelo ONNX quantizado, com revisão fixada, gera embeddings dos trechos do PDF e grava `.rag-bundle`. O cache de download fica em um diretório temporário fora do projeto e é removido antes do empacotamento; somente a cópia final do modelo entra na função. Não chama a LLM nem acessa o Redis. O download público do modelo precisa estar disponível durante o build.
 
 Na primeira consulta RAG de uma instância, o pacote é copiado para `/tmp`, que é gravável. O modelo é carregado com arquivos locais, sem download em execução. O índice e o encoder são reutilizados enquanto aquela instância estiver ativa. Instâncias novas repetem a inicialização; o cache em memória não é global. Alterações no PDF invalidam os vetores por hash.
 
@@ -79,3 +79,13 @@ Esses testes usam o transporte REST simulado para encaminhar os comandos a Redis
 Na preparação, passaram 112 testes Python, incluindo os seis testes com Redis real, além de mypy e testes Node. O RAG foi carregado com rede bloqueada a partir do pacote de 129,2 MiB: inicialização + consulta em 4,7 s e pico de RSS de 513,6 MiB. São medições locais desta verificação, não previsões de latência na Vercel. A geração pela LLM permanece com a pendência já registrada no ticket 14.
 
 Referências: [FastAPI na Vercel](https://vercel.com/docs/frameworks/backend/fastapi), [runtime Python](https://vercel.com/docs/functions/runtimes/python), [limites das funções](https://vercel.com/docs/functions/limitations), [headers da plataforma](https://vercel.com/docs/headers/request-headers), [Upstash REST](https://upstash.com/docs/redis/features/restapi).
+
+## Correção de tamanho do pacote
+
+O primeiro build remoto falhou com `LAMBDA_SIZE_EXCEEDED` (735,31 MiB). A preparação criava `.cache-build` dentro do projeto: `.vercelignore` só impedia seu envio inicial, mas não excluía o diretório recriado pelo build. O empacotador podia incluir blobs/snapshots auxiliares além do modelo final.
+
+O download agora ocorre em um diretório temporário fora do projeto, com limpeza em sucesso e falha. `.cache-build/**` também está excluído da função como proteção contra artefatos antigos. Repetir o build substitui arquivos antigos do modelo, inclusive arquivos somente de leitura.
+
+Mantenha `VERCEL_SUPPORT_LARGE_FUNCTIONS=1` em **Production e Preview** e confirme **Fluid Compute** habilitado. A variável é lida pelo empacotador durante o build; alterar só o ambiente de execução ou repetir um deployment antigo não aplica a correção. O empacotador Python 29.0.0, usado pelo CLI 65.4.0 do log, tenta instalar parte das dependências em execução quando essa opção está desabilitada; o conjunto ONNX/NumPy/modelo não cabe no limite interno dessa otimização. A correção reduz o pacote, mas não substitui essa configuração da plataforma.
+
+Reprodução local com o empacotador oficial `@vercel/python@29.0.0` e a variável habilitada: build concluído, função de 347,9 MiB (364.850.303 bytes), com aproximadamente 218,3 MiB de dependências e 129,2 MiB de assets do RAG. A inspeção dos arquivos da função não encontrou `.cache-build`, `.cache` ou `.env`. A confirmação do próximo build remoto permanece dependente da configuração e execução na conta Vercel. Os quatro testes de regressão do build passaram; a suíte totalizou 116 testes (seis testes opcionais de Redis real ignorados nesta execução).

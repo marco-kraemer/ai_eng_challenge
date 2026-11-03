@@ -1,10 +1,12 @@
 """Prepare offline RAG assets during build, without LLM credentials or Redis access."""
 import argparse
+from contextlib import nullcontext
 import hashlib
 import json
 from pathlib import Path
 import shutil
 import sys
+from tempfile import TemporaryDirectory
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -15,14 +17,21 @@ from huggingface_hub import snapshot_download
 
 def prepare(source: Path | None = None):
     bundle = ROOT / '.rag-bundle'
-    snapshot = snapshot_download(
-        repo_id='Xenova/multilingual-e5-small', revision='761b726dd34fb83930e26aab4e9ac3899aa1fa78',
-        cache_dir=str(source / 'embeddings' if source is not None else ROOT / '.cache-build/embeddings'),
-        local_files_only=source is not None,
-        allow_patterns=['config.json', 'tokenizer.json', 'tokenizer_config.json',
-                        'special_tokens_map.json', 'onnx/model_quantized.onnx'])
-    # Flatten only the model snapshot: no duplicated HF blobs or cache symlinks in the function.
-    shutil.copytree(snapshot, bundle / 'embeddings/model', dirs_exist_ok=True)
+    # Vercel scans files AFTER this build command. Download caches must stay outside
+    # the project, or their blobs/snapshots get bundled alongside the runtime model.
+    download_cache = (nullcontext(str(source / 'embeddings')) if source is not None
+                      else TemporaryDirectory(prefix='emporio-model-build-'))
+    with download_cache as cache:
+        snapshot = snapshot_download(
+            repo_id='Xenova/multilingual-e5-small', revision='761b726dd34fb83930e26aab4e9ac3899aa1fa78',
+            cache_dir=cache, local_files_only=source is not None,
+            allow_patterns=['config.json', 'tokenizer.json', 'tokenizer_config.json',
+                            'special_tokens_map.json', 'onnx/model_quantized.onnx'])
+        # Keep one flattened model; discard the build-only HF blobs and snapshots.
+        model_dir = bundle / 'embeddings/model'
+        if model_dir.exists():
+            shutil.rmtree(model_dir)
+        shutil.copytree(snapshot, model_dir, copy_function=shutil.copyfile)
     encoder = LocalEncoder(str(bundle / 'embeddings'))
     pdf = ROOT / 'data/políticas_da_loja.pdf'
     index = PolicyIndex(pdf, bundle / 'policies', encoder)
