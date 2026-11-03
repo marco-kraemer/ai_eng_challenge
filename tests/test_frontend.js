@@ -4,7 +4,8 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 class Element {
   constructor(tag = 'div') { this.tagName = tag; this.children = []; this.events = new Map(); this.attributes = new Map(); this.value = ''; this.disabled = false; }
-  append(...items) { this.children.push(...items); }
+  append(...items) { for (const item of items) {item.parentNode = this; this.children.push(item);} }
+  remove() {if (this.parentNode) this.parentNode.children = this.parentNode.children.filter(child => child !== this);}
   addEventListener(name, fn) { this.events.set(name, fn); }
   replaceChildren() { this.children = []; }
   setAttribute(name, value) { this.attributes.set(name, String(value)); if (name === 'class') this.className = value; }
@@ -25,6 +26,9 @@ function descendants(node) { return [node, ...(node.children || []).flatMap(desc
     return {ok: true, json: async () => await replies.shift()};
   }});
   vm.runInContext(fs.readFileSync('app/static/chat.js', 'utf8'), context);
+  const facts = JSON.parse(vm.runInContext('JSON.stringify(productFacts({specs:{strings:"nylon",electronics:"no",scale:"650mm",top:"Spruce",unknown:"Ignore"}}))', context));
+  assert.deepEqual(facts, [['Cordas','nylon'],['Captação','Sem captação'],['Escala','650mm']]);
+  assert.equal(vm.runInContext('productFacts({}).length', context), 0);
   for (const [raw, expected] of [['1.000,50', '1000.50'], ['1000.50', '1000.50'], ['1.000', '1000.00'], ['500', '500.00'], ['R$ 2.000,00', '2000.00'], ['', null], ['-1', null], ['NaN', null], ['1,234', null], ['1.23.4', null]]) {
     assert.equal(vm.runInContext(`parseBudget(${JSON.stringify(raw)})`, context), expected);
   }
@@ -40,7 +44,13 @@ function descendants(node) { return [node, ...(node.children || []).flatMap(desc
   let resolveOld;
   replies.push(new Promise(resolve => {resolveOld = resolve;}));
   const running = vm.runInContext('submit("pergunta antiga")', context);
-  await Promise.resolve(); nodes.get('#new').events.get('click')();
+  await Promise.resolve();
+  assert.equal(descendants(nodes.get('#messages')).filter(n => n.className === 'message typing-indicator').length, 1, 'Typing indicator must appear before the response');
+  assert.equal(nodes.get('#message-form .send').disabled, true);
+  const pendingCount = requests.length;
+  await vm.runInContext('submit("mensagem repetida")', context);
+  assert.equal(requests.length, pendingCount, 'Repeated submissions must not send requests');
+  nodes.get('#new').events.get('click')();
   resolveOld({message: 'Resposta que não pode aparecer.', products: [], sources: []}); await running;
   assert.equal(nodes.get('#messages').children.length, 0);
   assert.equal(nodes.get('#message-form .send').disabled, false);

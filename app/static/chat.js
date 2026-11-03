@@ -15,6 +15,7 @@ let generation = 0;
 let pickerLoad = 0;
 let categories = [];
 let selectedCategory = null;
+let selectedBudget = null;
 
 function element(tag, className, text) {
   const node = document.createElement(tag);
@@ -95,9 +96,10 @@ function renderCategories() {
     const button = element('button', 'instrument-option');
     button.type = 'button'; button.setAttribute('data-category-id', category.category_id);
     button.append(instrumentImage(category.illustration), element('strong', '', category.label));
-    button.addEventListener('click', () => {selectedCategory = category; renderBudget();});
+    button.addEventListener('click', () => {if (selectedCategory?.category_id !== category.category_id) selectedBudget = null; selectedCategory = category; renderBudget();});
     grid.append(button);
   }
+  if (!categories.length) picker.append(element('p', 'empty-catalog', 'Não há instrumentos em estoque no momento. Você pode consultar as informações da loja ou voltar mais tarde.'));
   picker.append(grid);
 }
 function parseBudget(raw) {
@@ -120,6 +122,7 @@ function renderBudget() {
   const budgetForm = element('form', 'budget-form');
   const label = element('label', '', 'Valor máximo (R$)'); label.htmlFor = 'budget-input';
   const field = element('input'); field.id = 'budget-input'; field.type = 'text'; field.inputMode = 'decimal'; field.placeholder = 'Ex.: 1.500,00'; field.autocomplete = 'off';
+  if (selectedBudget !== null) field.value = Number(selectedBudget).toLocaleString('pt-BR', {minimumFractionDigits: 2});
   const error = element('div', 'budget-error'); error.setAttribute('role', 'alert');
   const confirm = element('button', 'send', 'Ver instrumentos'); confirm.type = 'submit';
   for (const amount of [500, 1000, 2000, 5000]) {
@@ -144,6 +147,7 @@ function renderBudget() {
 }
 function searchSelectedCatalog(budget) {
   const category = selectedCategory;
+  selectedBudget = budget;
   const message = 'Quero ver ' + category.name.toLocaleLowerCase('pt-BR') + (budget === null ? '. Ainda não defini um orçamento.' : ' até ' + money.format(Number(budget)) + '.');
   const payload = {category_id: category.category_id};
   if (budget !== null) payload.max_price = budget;
@@ -186,14 +190,65 @@ function openOrder() {
   if (send.disabled) return;
   showMessages(); add('Consulte seu pedido com os dados da compra.', false, [], [], [], true);
 }
-function add(text, user = false, products = [], sources = [], actions = [], orderVerification = false, contacts = []) {
+const SPEC_LABELS = {strings: 'Cordas', electronics: 'Captação', scale: 'Escala', keys: 'Teclas', frets: 'Trastes', body: 'Corpo', type: 'Tipo', size: 'Tamanho', top: 'Tampo'};
+function productFacts(product) {
+  const facts = [];
+  for (const [key, label] of Object.entries(SPEC_LABELS)) {
+    const value = product.specs?.[key];
+    if (value === undefined || value === null || value === '') continue;
+    const readable = key === 'electronics' ? ({yes: 'Com captação', no: 'Sem captação'}[value] || String(value)) : String(value);
+    facts.push([label, readable]);
+    if (facts.length === 3) break;
+  }
+  return facts;
+}
+function comparisonTable(products) {
+  const wrapper = element('div', 'comparison-scroll'); wrapper.tabIndex = 0;
+  wrapper.setAttribute('role', 'region'); wrapper.setAttribute('aria-label', 'Comparação de instrumentos');
+  const table = element('table', 'comparison-table');
+  table.append(element('caption', '', 'Características informadas no catálogo'));
+  const head = element('tr'); head.append(element('th', '', 'Característica'));
+  for (const product of products) {const cell = element('th', '', product.name); cell.setAttribute('scope', 'col'); head.append(cell);}
+  table.append(head);
+  const rows = [['Preço de tabela', p => money.format(Number(p.price_brl))], ['Disponibilidade', p => p.stock_quantity > 0 ? 'Em estoque' : 'Sem estoque']];
+  for (const [key, label] of Object.entries(SPEC_LABELS)) {
+    if (products.some(p => p.specs?.[key] !== undefined)) rows.push([label, p => p.specs?.[key] === undefined ? 'Não informado' : key === 'electronics' ? ({yes: 'Com captação', no: 'Sem captação'}[p.specs[key]] || String(p.specs[key])) : String(p.specs[key])]);
+  }
+  if (products.some(p => p.budget_difference_brl !== undefined)) rows.push(['Acima do orçamento', p => money.format(Number(p.budget_difference_brl))]);
+  for (const [label, value] of rows) {
+    const row = element('tr'), heading = element('th', '', label); heading.setAttribute('scope', 'row'); row.append(heading);
+    for (const product of products) row.append(element('td', '', value(product)));
+    table.append(row);
+  }
+  wrapper.append(element('p', 'comparison-hint', 'Deslize para ver os outros instrumentos →'), table); return wrapper;
+}
+function add(text, user = false, products = [], sources = [], actions = [], orderVerification = false, contacts = [], search = null, comparison = false) {
   const item = element('article', 'message' + (user ? ' user' : ''));
   const label = element('div', 'label');
   if (!user) label.append(element('span', 'mini', '♪'));
-  label.append(document.createTextNode(user ? 'Você' : 'Empório da Música'));
+  label.append(document.createTextNode(user ? 'Você' : 'Tom · Empório da Música'));
   item.append(label, bodyText(text));
   if (orderVerification) item.append(orderWidget());
-  if (products.length) {
+  if (search) {
+    const summary = element('div', 'search-summary');
+    summary.append(element('span', '', search.label + ' · ' + (search.max_price === null ? 'Sem limite de preço' : 'Até ' + money.format(Number(search.max_price))) + ' · Em estoque'));
+    const edit = element('button', 'quiet', 'Alterar orçamento'); edit.type = 'button';
+    edit.addEventListener('click', () => {if (send.disabled) return; selectedCategory = search; selectedBudget = search.max_price; welcome.hidden = true; messages.hidden = true; picker.hidden = false; renderBudget();});
+    summary.append(edit); item.append(summary);
+  }
+  if (products.length || search) document.querySelectorAll('.compare-choice input, .compare-selected').forEach(node => {node.disabled = true; if (node.type === 'checkbox') node.checked = false;});
+  if (comparison) item.append(comparisonTable(products));
+  if (products.length && !comparison) {
+    const chosen = new Set();
+    const checks = [];
+    const compare = element('button', 'quiet compare-selected', 'Comparar selecionados'); compare.type = 'button'; compare.disabled = true;
+    compare.addEventListener('click', () => {
+      if (send.disabled || chosen.size < 2) return;
+      const payload = {product_ids: [...chosen]};
+      const budget = search ? search.max_price : selectedBudget;
+      if (budget !== null) payload.max_price = budget;
+      return requestReply('Quero comparar os instrumentos selecionados.', '/api/catalog/compare', payload);
+    });
     const grid = element('div', 'products');
     for (const product of products) {
       const card = element('article', 'product');
@@ -203,9 +258,24 @@ function add(text, user = false, products = [], sources = [], actions = [], orde
         original.append(element('del', '', money.format(Number(product.original_price_brl))), document.createTextNode(product.discount_percent + '% de desconto'));
         card.append(original);
       }
+      const facts = element('dl', 'product-facts');
+      for (const [label, value] of productFacts(product)) facts.append(element('dt', '', label), element('dd', '', value));
+      card.append(facts);
+      if (products.length >= 2) {
+        const choice = element('label', 'compare-choice');
+        const checkbox = element('input'); checkbox.type = 'checkbox'; checkbox.setAttribute('aria-label', 'Comparar ' + product.name); checks.push(checkbox);
+        checkbox.addEventListener('change', () => {
+          checkbox.checked ? chosen.add(product.product_id) : chosen.delete(product.product_id);
+          compare.disabled = chosen.size < 2;
+          compare.textContent = chosen.size ? 'Comparar selecionados (' + chosen.size + ')' : 'Comparar selecionados';
+          checks.forEach(node => node.disabled = !node.checked && chosen.size >= 4);
+        });
+        choice.append(checkbox, document.createTextNode('Comparar')); card.append(choice);
+      }
       const bottom = element('div', 'product-bottom'); bottom.append(element('div', 'price', money.format(Number(product.price_brl)))); card.append(bottom); grid.append(card);
     }
     item.append(grid);
+    if (products.length >= 2) item.append(compare);
   }
   for (const contact of contacts) {
     const channel = element('div', 'contact-channel');
@@ -224,7 +294,13 @@ function add(text, user = false, products = [], sources = [], actions = [], orde
     for (const action of actions) {
       if (action.id === 'draft') continue;
       const choice = element('button', 'next-action', action.label); choice.type = 'button';
-      choice.addEventListener('click', () => action.kind === 'instrument_picker' || action.id === 'categories' ? openFinder() : submit(action.message, action.id)); choices.append(choice);
+      choice.addEventListener('click', () => {
+        if (action.kind === 'catalog_search') {
+          selectedCategory = search; selectedBudget = action.selection.max_price;
+          return requestReply('Quero ver opções até ' + money.format(Number(selectedBudget)) + '.', '/api/catalog/search', action.selection);
+        }
+        return action.kind === 'instrument_picker' || action.id === 'categories' ? openFinder() : submit(action.message, action.id);
+      }); choices.append(choice);
     }
     item.append(choices);
   }
@@ -258,6 +334,19 @@ function showFailure(text, retryAction) {
   const item = add(text), retry = element('button', 'next-action retry', 'Tentar novamente'); retry.type = 'button';
   retry.addEventListener('click', retryAction); item.append(retry); scroll();
 }
+function showTyping() {
+  const item = element('article', 'message typing-indicator');
+  // #status announces the wait; keep the decorative bubble out of live announcements.
+  item.setAttribute('aria-hidden', 'true');
+  const label = element('div', 'label');
+  label.append(element('span', 'mini', '♪'), document.createTextNode('Tom · Empório da Música'));
+  const bubble = element('div', 'typing-bubble');
+  bubble.append(element('span', 'typing-text', 'Digitando'));
+  const dots = element('span', 'typing-dots');
+  for (let i = 0; i < 3; i++) dots.append(element('span', 'typing-dot'));
+  bubble.append(dots); item.append(label, bubble); messages.append(item); scroll();
+  return item;
+}
 function setBusy(busy) {
   send.disabled = busy; orderShortcut.disabled = busy;
   document.querySelectorAll('.intent, .instrument-option, .budget-option').forEach(button => button.disabled = busy);
@@ -273,13 +362,15 @@ async function requestReply(displayMessage, url, payload) {
   const currentGeneration = generation, controller = new AbortController(); activeRequest = controller;
   const timeout = setTimeout(() => controller.abort(), 120000);
   showMessages(); add(displayMessage, true); input.value = ''; setBusy(true);
-  status.textContent = 'Consultando as informações…'; form.setAttribute('aria-busy', 'true');
+  const pending = showTyping();
+  status.textContent = 'Mensagem enviada. O assistente está preparando a resposta…'; form.setAttribute('aria-busy', 'true');
   try {
     const response = await fetch(url, {method: 'POST', signal: controller.signal, headers: {'Content-Type': 'application/json'}, body: JSON.stringify({...payload, conversation_id: conversationId})});
     const data = await response.json(); if (currentGeneration !== generation) return;
+    pending.remove();
     if (response.ok) {
       conversationId = data.conversation_id || conversationId;
-      add(data.message, false, data.products || [], data.sources || [], data.actions || [], Boolean(data.order_verification_required), data.contacts || []);
+      add(data.message, false, data.products || [], data.sources || [], data.actions || [], Boolean(data.order_verification_required), data.contacts || [], data.search || null, Boolean(data.comparison));
     } else {
       const explanation = typeof data.detail === 'string' ? data.detail : 'Não foi possível concluir a consulta. Confira sua mensagem e tente novamente.';
       if (response.status === 422) add(explanation);
@@ -287,9 +378,10 @@ async function requestReply(displayMessage, url, payload) {
     }
   } catch (error) {
     if (currentGeneration !== generation) return;
+    pending.remove();
     showFailure(error.name === 'AbortError' ? 'A consulta demorou mais que o esperado. Tente novamente ou inicie outra conversa.' : 'Não conseguimos conectar. Confira sua conexão e tente novamente.', () => requestReply(displayMessage, url, payload));
   } finally {
-    clearTimeout(timeout);
+    clearTimeout(timeout); pending.remove();
     if (currentGeneration === generation) {activeRequest = null; setBusy(false); status.textContent = ''; form.removeAttribute('aria-busy'); input.focus();}
   }
 }
@@ -297,7 +389,7 @@ function resetConversation() {
   generation++; pickerLoad++;
   if (activeRequest) activeRequest.abort(); activeRequest = null;
   if (conversationId) fetch('/api/conversation/reset', {method: 'POST', keepalive: true, headers: {'Content-Type':'application/json'}, body: JSON.stringify({conversation_id: conversationId})}).catch(() => {});
-  conversationId = null; selectedCategory = null; messages.replaceChildren(); messages.hidden = false; welcome.hidden = false; picker.hidden = true;
+  conversationId = null; selectedCategory = null; selectedBudget = null; messages.replaceChildren(); messages.hidden = false; welcome.hidden = false; picker.hidden = true;
   input.value = ''; setBusy(false); status.textContent = ''; form.removeAttribute('aria-busy'); conversation.scrollTop = 0; input.focus();
 }
 form.addEventListener('submit', event => {event.preventDefault(); submit(input.value.trim());});

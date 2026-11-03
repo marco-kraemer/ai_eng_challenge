@@ -27,7 +27,7 @@ with sync_playwright() as p:
     page.locator('[data-intent=products]').focus()
     page.keyboard.press('Enter')
     page.get_by_role('heading',name='Qual instrumento você procura?').wait_for()
-    page.locator('.instrument-option').nth(8).wait_for()
+    page.locator('.instrument-option').nth(5).wait_for()
     page.wait_for_function("[...document.querySelectorAll('.instrument-image use')].every(node=>node.getBBox().width>0)")
     assert not chat_requests,'A picker must not ask about arbitrary guitars/budget or consume LLM quota'
     assert page.locator('#messages .message').count()==0
@@ -100,4 +100,4 @@ with sync_playwright() as p:
     page.screenshot(path='/tmp/emporio-customer-home-mobile.png')
     assert not errors,errors
     browser.close()
-    print('Browser OK: customer copy, nine loaded illustrations, keyboard, explicit category/budget, optional price, real catalog without LLM, contextual comparison, sources, retry, order privacy, mobile and reset.')
+    print('Browser OK: customer copy, available-category illustrations, keyboard, explicit category/budget, optional price, real catalog without LLM, contextual comparison, sources, retry, order privacy, mobile and reset.')

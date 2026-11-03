@@ -9,3 +9,38 @@
 @media(prefers-reduced-motion:reduce){.message{animation:none}.intent,.instrument-option{transition:none}}
 /* Programmatic heading focus announces the step without a visual input-style border. */
 .picker h2:focus{outline:none}
+
+/* Quiet ink studies on warm paper; illustrations represent categories, not specific products. */
+.instrument-option {background: #fcfaf6; border-color: #e8e2d9;}
+.instrument-option:hover {background: #f5f1e9; border-color: #a69b87;}
+.instrument-image {filter: none;}
+.product-facts {display:grid;grid-template-columns:auto 1fr;gap:5px 12px;font-size:12px;margin:14px 0;color:#5e6058;}
+.product-facts dt {color:#777a70;}
+.product-facts dd {margin:0;text-align:right;overflow-wrap:anywhere;}
+
+.search-summary {display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;padding:12px 0;margin-bottom:12px;border-bottom:1px solid #e7e3da;font-size:12px;color:#5e6058;}
+
+.compare-choice {display:flex;align-items:center;gap:8px;font-size:12px;margin:12px 0;cursor:pointer;}
+.compare-choice input {accent-color:#315b49;width:16px;height:16px;}
+.compare-selected {margin-top:12px;border:1px solid #c4cec5;padding:10px 16px;border-radius:8px;}
+.compare-selected:disabled {opacity:.45;cursor:default;}
+.comparison-scroll {max-width:100%;overflow-x:auto;margin:16px 0;}
+.comparison-table {width:100%;min-width:550px;border-collapse:collapse;font-size:12px;text-align:left;}
+.comparison-table caption {text-align:left;margin-bottom:12px;color:#62665c;}
+.comparison-table th,.comparison-table td {padding:12px;border-bottom:1px solid #e8e5df;vertical-align:top;max-width:190px;overflow-wrap:anywhere;}
+.comparison-table tr:first-of-type {background:#f6f3ed;}
+.comparison-table th {font-weight:600;}
+
+.comparison-hint {display:none;font-size:12px;color:#62665c;margin:0 0 12px;}
+@media(max-width:650px){.comparison-hint{display:block;}}
+
+.typing-indicator {width:fit-content;}
+.typing-bubble {display:flex;align-items:center;gap:12px;padding:13px 17px;border:1px solid var(--line);border-radius:3px 14px 14px 14px;background:var(--paper);}
+.typing-text {font-size:13px;color:var(--muted);}
+.typing-dots {display:flex;gap:5px;align-items:center;height:14px;}
+.typing-dot {width:5px;height:5px;border-radius:50%;background:var(--green);animation:typing-pulse 1.2s ease-in-out infinite;}
+.typing-dot:nth-child(2) {animation-delay:.16s;}
+.typing-dot:nth-child(3) {animation-delay:.32s;}
+.send:disabled {opacity:.55;cursor:wait;}
+@keyframes typing-pulse {0%,60%,100%{opacity:.35;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+@media(prefers-reduced-motion:reduce){.typing-dot{animation:none;opacity:.65;}}
