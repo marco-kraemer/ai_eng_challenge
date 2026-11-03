@@ -15,7 +15,7 @@ class AvailabilityTests(unittest.TestCase):
             (root/'products.csv').write_text('product_id,category_id,status,stock_quantity,price_brl\n1,1,active,1,900\n2,2,active,0,700\n3,3,inactive,3,500\n')
             catalog=Catalog(root)
             self.assertEqual([c['category_id'] for c in catalog.available_categories()['items']],[1])
-            with patch('app.web.Catalog',return_value=catalog),patch('app.web.OpenRouter') as provider,TestClient(app) as client:
+            with patch('app.web.Catalog',return_value=catalog),patch('app.web.build_provider') as provider,TestClient(app) as client:
                 response=client.get('/api/categories')
             self.assertEqual([c['category_id'] for c in response.json()['categories']],[1])
             provider.assert_not_called()

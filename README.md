@@ -19,8 +19,9 @@ cp -n .env.example .env
 Preencha `.env` localmente:
 
 ```dotenv
-OPENROUTER_API_KEY=sua-chave
-OPENROUTER_MODEL=openrouter/free
+LLM_PROVIDER=openai
+OPEN_AI_KEY=sua-chave
+OPENAI_MODEL=gpt-4.1-mini
 ```
 
 ```bash
@@ -29,7 +30,7 @@ OPENROUTER_MODEL=openrouter/free
 
 Abra **http://localhost:8000**. A chave fica no servidor; `.env` é ignorado pelo Git e pelo Docker. Sem chave/cota, a seleção de instrumento e orçamento, a busca estruturada no catálogo e a consulta protegida de pedidos continuam disponíveis. Somente a conversa gerada pelo modelo informa indisponibilidade ou limite.
 
-Para preparar o índice antes de abrir o chat e reproduzir a avaliação de recuperação, sem chamar OpenRouter:
+Para preparar o índice antes de abrir o chat e reproduzir a avaliação de recuperação, sem chamar a LLM:
 
 ```bash
 .venv/bin/python scripts/evaluate_policies.py --output docs/avaliacao-busca-politicas.json
@@ -89,7 +90,7 @@ FastAPI serve HTML e arquivos CSS/JavaScript/SVG locais. Não há frontend separ
 
 A busca híbrida recuperou todas as seções esperadas em **20/22** casos de desenvolvimento, contra 18/22 na lexical e 16/22 na semântica isolada. [Resultados e falhas conhecidos](docs/avaliacao-busca-politicas.json). Essa métrica não comprova a correção de todas as respostas finais.
 
-O OpenRouter usa apenas `openrouter/free` ou identificadores `:free`; não há fallback pago. O roteador pode escolher modelos diferentes, e a cota varia com a conta e os provedores. [Documentação](https://openrouter.ai/docs/guides/routing/routers/free-router). Fixar um modelo gratuito compatível com ferramentas torna avaliações mais reproduzíveis. O adaptador Gemini permanece como alternativa técnica, mas o endpoint usa OpenRouter.
+O provedor padrão é a API direta da OpenAI, com `gpt-4.1-mini` (também aceita o snapshot `gpt-4.1-mini-2025-04-14`). Configure `OPEN_AI_KEY` ou `OPENAI_API_KEY`; se ambas existirem, `OPEN_AI_KEY` tem prioridade. Há até 2.048 tokens de saída por chamada e nenhuma troca automática de modelo ou provedor. Configure o orçamento da API no painel do provedor. [Modelo e preços](https://developers.openai.com/api/docs/models/gpt-4.1-mini). Para usar a integração anterior, defina explicitamente `LLM_PROVIDER=openrouter`, `OPENROUTER_API_KEY` e `OPENROUTER_MODEL=openrouter/free`; ela continua aceitando apenas modelos gratuitos. O adaptador Gemini permanece como alternativa técnica legada.
 
 A orquestração usa LangGraph para classificação, políticas com busca obrigatória, comparação com dados atuais e um ciclo limitado de ferramentas. LangChain fornece o modelo de chat e sete ferramentas com argumentos validados. A LLM interpreta preferências e continuações no contexto; orçamento é opcional e não há listas de frases para decidir buscas. [Fluxos, estado, decisões e testes](docs/arquitetura-langgraph.md).
 
@@ -104,7 +105,7 @@ Perguntas mistas, datas especiais/relativas e continuações ambíguas seguem o 
 - Localmente, até 100 conversas em memória por processo; na Vercel, estado e limites compartilhados no Redis; expiram após 15 minutos de inatividade. Tokens de conversa ficam apenas na página, sem cookies/localStorage. Histórico: até 12 mensagens e 8.000 caracteres, com e-mails removidos; estado mínimo guarda filtros, IDs, assunto, modalidade de compra, pergunta pendente e opções disponíveis. Sem sumarização automática.
 - Requisição: até 16 KB; mensagem: 2.000 caracteres. Contexto dinâmico serializado: até 24 KB UTF-8, um limite conservador em bytes, não a contagem exata do tokenizer do modelo. Saída configurada em até 2.048 tokens por geração.
 - Até quatro gerações no subgrafo e três ferramentas por geração, além da classificação e da consulta prévia de políticas/comparação quando aplicável; quatro atendimentos simultâneos, 20 requisições de chat/min/IP e cinco verificações de pedido/min/IP. Limites são locais a um processo; usar um worker. Não confiar em cabeçalhos de proxy sem configurar um proxy confiável.
-- No máximo uma repetição em timeout/conexão ou HTTP 502/503/504. HTTP 429 não é repetido automaticamente e recebe indicação de limite; não aciona serviço pago. A quota do modelo pode ficar indisponível mesmo com a aplicação saudável.
+- No máximo uma repetição em timeout/conexão ou HTTP 502/503/504. HTTP 429 não é repetido automaticamente e recebe indicação de limite; não troca de modelo/provedor. A quota do modelo pode ficar indisponível mesmo com a aplicação saudável.
 - Número + e-mail é **verificação fraca**, sem autenticação forte. Produção exige autenticação/OTP, proteção distribuída contra tentativas e revisão de privacidade. Status/previsão/rastreio são registros da base, sem rastreamento ao vivo.
 - O manual diverge em contatos e mínimos de parcelamento; o agente deve expor a incerteza e pedir confirmação à equipe. Conteúdo recuperado permanece como dado de ferramenta, sem conceder permissões.
 - Identidade e recusa são controladas pela aplicação, mas a classificação de escopo e a redação dependem do modelo e podem errar. Não garantimos ausência absoluta de alucinação ou prompt injection.

@@ -13,7 +13,7 @@ class SessionAPITests(unittest.TestCase):
             calls.append(contents)
             return {'parts':[{'text':'Posso ajudar com as opções.'}]}
         provider.generate.side_effect=generate
-        with patch('app.web.OpenRouter',return_value=provider),TestClient(app) as client:
+        with patch('app.web.build_provider',return_value=provider),TestClient(app) as client:
             first=client.post('/api/chat',json={'message':'Quero violões até 600'}).json()
             token=first['conversation_id']
             client.post('/api/chat',json={'message':'Mostre os mais baratos','conversation_id':token})

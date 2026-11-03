@@ -25,7 +25,7 @@ class ScenarioModel:
 
 def evaluate(scenarios):
     cases=[]
-    with patch('app.web.OpenRouter',ScenarioModel), patch('app.web.rate_limiter',RateLimiter()), patch('app.web.conversations',ConversationStore()), TestClient(app) as client:
+    with patch('app.web.build_provider',ScenarioModel), patch('app.web.rate_limiter',RateLimiter()), patch('app.web.conversations',ConversationStore()), TestClient(app) as client:
         for scenario in scenarios:
             errors=[]
             token=None

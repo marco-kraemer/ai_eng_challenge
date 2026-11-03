@@ -15,7 +15,7 @@ class AddressFAQTests(unittest.TestCase):
 
     def test_address_variants_skip_all_inference_and_return_source(self):
         provider=Mock();provider.generate.side_effect=RuntimeError('No model available')
-        with patch('app.web.OpenRouter',return_value=provider), patch('app.chat.get_policy_index') as index, TestClient(app) as client:
+        with patch('app.web.build_provider',return_value=provider), patch('app.chat.get_policy_index') as index, TestClient(app) as client:
             for question in ('Qual é o endereço da loja?','Onde vocês ficam?','Onde fica a Empório da Música?'):
                 response=client.post('/api/chat',json={'message':question})
                 self.assertEqual(response.status_code,200)

@@ -36,7 +36,7 @@ class GraphLimitTests(unittest.TestCase):
     def test_quota_error_survives_graph_as_http_429(self):
         provider = Mock()
         provider.generate.side_effect = RuntimeError('Limite de uso do modelo atingido. Aguarde e tente mais tarde.')
-        with patch('app.web.rate_limiter', RateLimiter()), patch('app.web.OpenRouter', return_value=provider), TestClient(app) as client:
+        with patch('app.web.rate_limiter', RateLimiter()), patch('app.web.build_provider', return_value=provider), TestClient(app) as client:
             response = client.post('/api/chat', json={'message': 'Oi'})
         self.assertEqual(response.status_code, 429)
         self.assertEqual(response.headers['Retry-After'], '60')
@@ -46,7 +46,7 @@ class GraphLimitTests(unittest.TestCase):
     def test_email_is_not_sent_to_model_or_saved_in_graph_context(self):
         from app.web import conversations
         provider = Mock()
-        with patch('app.web.rate_limiter', RateLimiter()), patch('app.web.OpenRouter', return_value=provider), TestClient(app) as client:
+        with patch('app.web.rate_limiter', RateLimiter()), patch('app.web.build_provider', return_value=provider), TestClient(app) as client:
             response = client.post('/api/chat', json={'message': 'Meu pedido foi feito com cliente@example.test'})
         data = response.json()
         self.assertTrue(data['order_verification_required'])

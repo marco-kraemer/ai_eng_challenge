@@ -18,7 +18,7 @@ def run():
     sock=socket.socket();sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
     server=uvicorn.Server(uvicorn.Config(app,log_level='error',proxy_headers=False))
     worker=threading.Thread(target=server.run,kwargs={'sockets':[sock]},daemon=True)
-    with patch('app.web.OpenRouter',NoInference):
+    with patch('app.web.build_provider',NoInference):
         worker.start()
         try:
             deadline=time.monotonic()+10

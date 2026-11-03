@@ -44,7 +44,7 @@ class PolicyChatTests(unittest.TestCase):
         provider.generate.side_effect=[{'parts':[{'text':'store'}]},
             {'parts':[{'functionCall':{'name':'search_policies','args':{'query':'horário de funcionamento'}}}]},
             {'parts':[{'text':'De segunda a sexta, das 9h às 18h. Manual, p. 2.'}]}]
-        with patch('app.web.OpenRouter',return_value=provider), patch('app.chat.get_policy_index') as index, TestClient(app) as client:
+        with patch('app.web.build_provider',return_value=provider), patch('app.chat.get_policy_index') as index, TestClient(app) as client:
             index.return_value.search.return_value=RESULT
             response=client.post('/api/chat',json={'message':'Que horas vocês abrem em datas especiais?'})
         self.assertEqual(response.status_code,200)

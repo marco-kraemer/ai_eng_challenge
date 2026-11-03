@@ -24,7 +24,7 @@ class GraphProductTests(unittest.TestCase):
         self.assertTrue(all(isinstance(tool, BaseTool) for tool in assistant.chat.tools.values()))
         self.assertIn('classify', assistant.graph.get_graph().nodes)
         self.assertIn('tools', assistant.chat.graph.get_graph().nodes)
-        with patch('app.web.StoreAssistant', return_value=assistant), patch('app.web.OpenRouter'), TestClient(app) as client:
+        with patch('app.web.StoreAssistant', return_value=assistant), patch('app.web.build_provider'), TestClient(app) as client:
             response = client.post('/api/chat', json={'message': 'Violão até 600'})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['products'][0]['price_brl'], '599.90')

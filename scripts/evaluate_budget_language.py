@@ -1,6 +1,6 @@
 """Opt-in live evaluation of contextual budget language, using the configured provider.
 
-Run with --live. Sends synthetic conversations to OpenRouter; uses real catalog tools.
+Run with --live. Sends synthetic conversations to the configured provider; uses real catalog tools.
 Contract unit tests do not replace this model-quality check.
 """
 import argparse
@@ -14,12 +14,12 @@ from dotenv import load_dotenv
 from app.assistant import StoreAssistant
 from app.catalog import Catalog
 from app.catalog_flow import catalog_reply
-from app.openrouter import OpenRouter
+from app.llm import build_provider
 
 
 class ObservedProvider:
     def __init__(self):
-        self.provider = OpenRouter()
+        self.provider = build_provider()
         self.tool_calls = []
         self.classifications = []
 
@@ -72,7 +72,7 @@ def evaluate():
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--live', action='store_true', help='Explicitly enable real OpenRouter requests.')
+    parser.add_argument('--live', action='store_true', help='Explicitly enable real provider requests.')
     args = parser.parse_args()
     if not args.live:
         parser.error('Use --live to enable real provider requests.')

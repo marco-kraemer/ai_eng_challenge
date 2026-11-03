@@ -6,7 +6,7 @@ from app.actions import next_actions, resolve_action
 
 class CustomerFlowTests(unittest.TestCase):
     def test_category_picker_uses_real_categories_without_model(self):
-        with patch('app.web.OpenRouter') as provider,TestClient(app) as client:
+        with patch('app.web.build_provider') as provider,TestClient(app) as client:
             response=client.get('/api/categories')
         self.assertEqual(response.status_code,200)
         categories=response.json()['categories']
@@ -19,7 +19,7 @@ class CustomerFlowTests(unittest.TestCase):
         provider.assert_not_called()
 
     def test_selected_instrument_and_budget_search_catalog_directly(self):
-        with patch('app.web.OpenRouter') as provider,TestClient(app) as client:
+        with patch('app.web.build_provider') as provider,TestClient(app) as client:
             response=client.post('/api/catalog/search',json={'category_id':5,'max_price':'600.00'})
         self.assertEqual(response.status_code,200)
         data=response.json()
@@ -32,7 +32,7 @@ class CustomerFlowTests(unittest.TestCase):
         provider.assert_not_called()
 
     def test_no_budget_is_not_replaced_with_default_price_or_instrument(self):
-        with patch('app.web.OpenRouter') as provider,TestClient(app) as client:
+        with patch('app.web.build_provider') as provider,TestClient(app) as client:
             response=client.post('/api/catalog/search',json={'category_id':1})
             invalid=client.post('/api/catalog/search',json={'category_id':5,'max_price':'NaN'})
         self.assertEqual(response.status_code,200)

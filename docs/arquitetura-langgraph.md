@@ -68,9 +68,9 @@ Argumentos extras ou de tipo incorreto produzem resultado `invalid` sem chamar a
 
 ## Modelo e transporte
 
-`app/langchain_model.py` implementa `BaseChatModel`, `bind_tools`, `HumanMessage`, `AIMessage`, `SystemMessage` e `ToolMessage`. O adaptador usa o transporte `app/openrouter.py`, preservando IDs nativos de chamadas e a política existente: somente modelos gratuitos, repetição limitada e nenhuma repetição automática para HTTP 429.
+`app/langchain_model.py` implementa `BaseChatModel`, `bind_tools`, `HumanMessage`, `AIMessage`, `SystemMessage` e `ToolMessage`. O adaptador usa o transporte `app/openrouter.py`, preservando IDs nativos de chamadas e a política existente: modelo aprovado por provedor, repetição limitada e nenhuma repetição automática para HTTP 429.
 
-O transporte legado é mantido como fronteira HTTP testada; o antigo loop manual de quatro rodadas foi substituído pelo grafo. A adaptação de mensagens permite reutilizar os testes do transporte. O endpoint continua usando OpenRouter; não foi introduzido outro serviço de inferência.
+O transporte legado é mantido como fronteira HTTP testada; o antigo loop manual de quatro rodadas foi substituído pelo grafo. A adaptação de mensagens permite reutilizar os testes do transporte. O endpoint usa a API direta da OpenAI por padrão (`gpt-4.1-mini`), selecionada por `build_provider()`. O transporte Chat Completions limitado é compartilhado; OpenRouter permanece opcional, gratuito e selecionado explicitamente. Não há fallback entre provedores.
 
 O limite de 24 KB UTF-8 é verificado antes de cada chamada ao transporte, inclusive na classificação. É um limite de contexto dinâmico serializado, excluindo o prompt de sistema fixo, e não uma contagem exata de tokens. Documentos permanecem como dados em mensagens de ferramenta.
 

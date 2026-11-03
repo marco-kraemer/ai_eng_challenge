@@ -130,7 +130,7 @@ class SharedStateTests(unittest.TestCase):
         with patch('app.web.rate_limiter', RateLimiter()), TestClient(app) as client:
             with patch('app.web.conversations', self.first):
                 first = client.post('/api/catalog/search', json={'category_id': 2, 'max_price': '500'}).json()
-            with patch('app.web.conversations', self.second), patch('app.web.OpenRouter', return_value=provider):
+            with patch('app.web.conversations', self.second), patch('app.web.build_provider', return_value=provider):
                 response = client.post('/api/chat', json={'message': 'tanto faz o preço agora', 'conversation_id': first['conversation_id']})
         self.assertEqual(response.status_code, 200, response.text)
         self.assertEqual(response.json()['conversation_id'], first['conversation_id'])

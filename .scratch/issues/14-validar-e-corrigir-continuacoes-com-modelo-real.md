@@ -23,3 +23,10 @@ Cota disponível no OpenRouter. O provedor retornou HTTP 429 na revalidação. N
 - [ ] Manter recusa de assuntos alheios, isolamento de sessão e reinício da conversa.
 - [ ] Avaliar ao vivo também a voz de Tom: naturalidade, transparência sobre IA, concisão e ausência de afirmações pessoais ou de produto sem fonte.
 - [ ] Registrar resultados e limitações antes de encerrar o ticket; não trocar modelo, rotacionar chaves ou publicar resultados não observados.
+
+## Validação parcial com OpenAI direta — 2026-11-03
+- Provedor padrão migrado para GPT-4.1 mini, com chave e créditos autorizados pelo usuário.
+- Primeira rodada real: 2/4. Classificação correta nos quatro; duas buscas sem preço usaram tipo de instrumento em `query`, que pesquisa nome de produto.
+- Orientação das ferramentas corrigida: descobrir IDs com `list_categories` e filtrar tipo de instrumento por `category_id`, sem dicionários de frases em Python.
+- Revalidação real: 4/4, entre 3,07 e 4,95 segundos. Relatório: `docs/avaliacao-openai-orcamento.json`.
+- Validação parcial, com histórico pré-carregado: não encerra critérios de novas formulações, isolamento/reset, voz e grounding de todas as afirmações.

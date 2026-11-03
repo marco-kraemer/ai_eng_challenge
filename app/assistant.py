@@ -8,10 +8,9 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import END, START, StateGraph
 
 from app.catalog import Catalog
-from app.chat import Chat
+from app.chat import Chat, Provider
 from app.conversations import ConversationContext
 from app.langchain_model import history_messages
-from app.openrouter import OpenRouter
 from app.direct_faq import answer_faq
 from app.persona import IDENTITY
 
@@ -64,7 +63,7 @@ class StoreState(ConversationContext):
 
 
 class StoreAssistant:
-    def __init__(self, provider: OpenRouter, catalog: Catalog, state: dict | None=None):
+    def __init__(self, provider: Provider, catalog: Catalog, state: dict | None=None):
         self.provider = provider
         self.chat = Chat(provider, catalog, state=state)
         self.memory: ConversationContext = {

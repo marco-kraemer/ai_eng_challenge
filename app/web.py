@@ -12,7 +12,7 @@ from app.limits import RateLimiter, BodyLimitMiddleware
 from app.conversations import ConversationStore
 from app.actions import next_actions, resolve_action
 from app.assistant import StoreAssistant
-from app.openrouter import OpenRouter
+from app.llm import build_provider
 from app.runtime import build_backends
 from app.redis_state import StorageUnavailable
 from starlette.concurrency import run_in_threadpool
@@ -91,7 +91,7 @@ def reply(message: Message):
     try:
         state=conversations.state(token)
         text=resolve_action(message.action_id,state) if message.action_id else message.message
-        assistant=StoreAssistant(OpenRouter(), Catalog(ROOT / 'data'),state=state)
+        assistant=StoreAssistant(build_provider(), Catalog(ROOT / 'data'),state=state)
         result=assistant.reply(text,history=conversations.history(token))
         result.setdefault('actions',next_actions(result))
         state=assistant.context()

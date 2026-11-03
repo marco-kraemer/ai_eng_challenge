@@ -28,7 +28,7 @@ class OrderTests(unittest.TestCase):
         provider.generate.assert_not_called()
 
     def test_order_endpoint_does_not_call_model(self):
-        with patch('app.web.Orders') as orders,patch('app.web.OpenRouter') as model,TestClient(app) as client:
+        with patch('app.web.Orders') as orders,patch('app.web.build_provider') as model,TestClient(app) as client:
             orders.return_value.verify.return_value={'status':'found','order':{'status':'shipped','estimated_delivery':None,'tracking_code':None}}
             response=client.post('/api/orders/verify',json={'order_id':42,'email':'cliente@example.test'})
         self.assertEqual(response.status_code,200)

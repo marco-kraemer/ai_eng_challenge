@@ -18,7 +18,7 @@ class GraphContextTests(unittest.TestCase):
             {'parts': [{'text': 'compare'}]},
             {'parts': [{'text': 'Aqui estão as diferenças das opções selecionadas.'}]},
         ]
-        with patch('app.web.OpenRouter', return_value=provider), TestClient(app) as client:
+        with patch('app.web.build_provider', return_value=provider), TestClient(app) as client:
             selected = client.post('/api/catalog/search', json={'category_id': 5, 'max_price': '1000'}).json()
             ids = [item['product_id'] for item in selected['products']]
             compared = client.post('/api/chat', json={'action_id': 'compare', 'conversation_id': selected['conversation_id']})
@@ -39,7 +39,7 @@ class GraphContextTests(unittest.TestCase):
             {'parts': [{'text': 'policies'}]},
             {'parts': [{'text': 'A regra da compra online está no manual.'}]},
         ]
-        with patch('app.web.OpenRouter', return_value=provider), patch('app.chat.get_policy_index') as index, TestClient(app) as client:
+        with patch('app.web.build_provider', return_value=provider), patch('app.chat.get_policy_index') as index, TestClient(app) as client:
             index.return_value.search.return_value = evidence
             first = client.post('/api/chat', json={'message': 'Posso devolver um violão?'}).json()
             token = first['conversation_id']
@@ -61,7 +61,7 @@ class GraphContextTests(unittest.TestCase):
             {'parts': [{'text': 'A devolução online segue o manual.'}]},
         ]
         evidence = {'status': 'found', 'items': [{'id': 'return', 'pages': [4], 'text': 'Compra online: sete dias.'}], 'warnings': []}
-        with patch('app.web.OpenRouter', return_value=provider), patch('app.chat.get_policy_index') as index, TestClient(app) as client:
+        with patch('app.web.build_provider', return_value=provider), patch('app.chat.get_policy_index') as index, TestClient(app) as client:
             index.return_value.search.return_value = evidence
             response = client.post('/api/chat', json={'message': 'Comprei online e quero devolver meu violão.'})
         self.assertEqual(response.status_code, 200)

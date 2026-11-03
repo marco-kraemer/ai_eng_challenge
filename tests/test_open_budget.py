@@ -31,7 +31,7 @@ class OpenBudgetTests(unittest.TestCase):
                     text('store'), text('Qual é seu orçamento?'), text('store'),
                     call('search_catalog', category_id=5), text('Aqui estão algumas opções de violão.'),
                 ]
-                with patch('app.web.OpenRouter', return_value=provider), TestClient(app) as client:
+                with patch('app.web.build_provider', return_value=provider), TestClient(app) as client:
                     first = client.post('/api/chat', json={
                         'message': 'sou estudante e iniciante e to querendo comprar um violão, me ajuda',
                     }).json()
@@ -51,7 +51,7 @@ class OpenBudgetTests(unittest.TestCase):
     def test_model_can_remove_previous_budget_and_pending_offer(self):
         provider = Mock()
         provider.generate.side_effect = [text('store'), call('search_catalog', category_id=2), text('Veja os baixos disponíveis.')]
-        with patch('app.web.OpenRouter', return_value=provider), TestClient(app) as client:
+        with patch('app.web.build_provider', return_value=provider), TestClient(app) as client:
             first = client.post('/api/catalog/search', json={'category_id': 2, 'max_price': '500'}).json()
             response = client.post('/api/chat', json={
                 'message': 'manda as opções sem se prender a preço', 'conversation_id': first['conversation_id'],
@@ -69,7 +69,7 @@ class OpenBudgetTests(unittest.TestCase):
     def test_unrestricted_request_still_goes_through_scope_guard(self):
         provider = Mock()
         provider.generate.return_value = text('offtopic')
-        with patch('app.web.OpenRouter', return_value=provider), TestClient(app) as client:
+        with patch('app.web.build_provider', return_value=provider), TestClient(app) as client:
             first = client.post('/api/catalog/search', json={'category_id': 5, 'max_price': '1000'}).json()
             result = client.post('/api/chat', json={
                 'message': 'sem limite de preço, me ensine Python', 'conversation_id': first['conversation_id'],
@@ -81,7 +81,7 @@ class OpenBudgetTests(unittest.TestCase):
     def test_new_session_does_not_inherit_instrument(self):
         provider = Mock()
         provider.generate.side_effect = [text('store'), text('Qual instrumento você procura?')]
-        with patch('app.web.OpenRouter', return_value=provider), TestClient(app) as client:
+        with patch('app.web.build_provider', return_value=provider), TestClient(app) as client:
             client.post('/api/catalog/search', json={'category_id': 5})
             result = client.post('/api/chat', json={'message': 'tanto faz'}).json()
         self.assertEqual(result['products'], [])
@@ -90,7 +90,7 @@ class OpenBudgetTests(unittest.TestCase):
     def test_model_chooses_instrument_without_python_name_mapping(self):
         provider = Mock()
         provider.generate.side_effect = [text('store'), call('search_catalog', category_id=5), text('Veja os violões.')]
-        with patch('app.web.OpenRouter', return_value=provider), TestClient(app) as client:
+        with patch('app.web.build_provider', return_value=provider), TestClient(app) as client:
             response = client.post('/api/chat', json={'message': 'quero um acoustic guitar para começar, sem gastar tempo escolhendo valor'})
         self.assertEqual(response.status_code, 200, response.text)
         self.assertTrue(response.json()['products'])

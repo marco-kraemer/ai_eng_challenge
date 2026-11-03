@@ -40,7 +40,7 @@ class CatalogNameSearchTests(unittest.TestCase):
             {'parts':[{'functionCall':{'name':'search_catalog','args':{'query':'Takamine GD20'}}}]},
             {'parts':[{'text':'Encontrei o Takamine GD20. Confira o preço e a disponibilidade no card.'}]},
         ]
-        with patch('app.web.rate_limiter',RateLimiter()),patch('app.web.OpenRouter',return_value=provider),TestClient(app) as client:
+        with patch('app.web.rate_limiter',RateLimiter()),patch('app.web.build_provider',return_value=provider),TestClient(app) as client:
             response=client.post('/api/chat',json={'message':'Quanto custa o Takamine GD20?'})
         self.assertEqual(response.status_code,200)
         self.assertEqual([p['product_id'] for p in response.json()['products']],[95])

@@ -13,7 +13,7 @@ class ContactFAQTests(unittest.TestCase):
 
     def test_phone_whatsapp_and_email_keep_official_channels_and_discrepancies(self):
         provider=Mock();provider.generate.side_effect=RuntimeError('No inference')
-        with patch('app.web.OpenRouter',return_value=provider),TestClient(app) as client:
+        with patch('app.web.build_provider',return_value=provider),TestClient(app) as client:
             for question in ('Qual é o telefone da loja?','Qual o WhatsApp da loja?','Como posso falar com a loja?'):
                 response=client.post('/api/chat',json={'message':question})
                 self.assertEqual(response.status_code,200,question)

@@ -14,7 +14,7 @@ class PendingBudgetTests(unittest.TestCase):
 
     def test_model_interprets_confirmation_and_selects_offered_budget(self):
         for confirmation in ('quero', 'fechou, pode trazer essas opções', 'vamos nessa'):
-            with self.subTest(confirmation=confirmation), patch('app.web.OpenRouter') as provider, TestClient(app) as client:
+            with self.subTest(confirmation=confirmation), patch('app.web.build_provider') as provider, TestClient(app) as client:
                 offered = client.post('/api/catalog/search', json={'category_id': 2, 'max_price': '500'}).json()
                 price = offered['recovery']['price_brl']
                 provider.return_value.generate.side_effect = [
@@ -36,7 +36,7 @@ class PendingBudgetTests(unittest.TestCase):
     def test_model_dismisses_offer_without_raising_budget(self):
         provider = Mock()
         provider.generate.side_effect = [text('store'), call('dismiss_budget_offer'), text('Tudo bem, mantive seu limite anterior.')]
-        with patch('app.web.OpenRouter', return_value=provider), TestClient(app) as client:
+        with patch('app.web.build_provider', return_value=provider), TestClient(app) as client:
             offer = client.post('/api/catalog/search', json={'category_id': 2, 'max_price': '500'}).json()
             response = client.post('/api/chat', json={'message': 'esse aumento não serve pra mim', 'conversation_id': offer['conversation_id']})
         self.assertEqual(response.status_code, 200, response.text)
@@ -49,7 +49,7 @@ class PendingBudgetTests(unittest.TestCase):
     def test_model_extracts_new_budget_instead_of_accepting_offer(self):
         provider = Mock()
         provider.generate.side_effect = [text('store'), call('search_catalog', category_id=2, max_price='2000'), text('Não encontrei baixos nesse valor.')]
-        with patch('app.web.OpenRouter', return_value=provider), TestClient(app) as client:
+        with patch('app.web.build_provider', return_value=provider), TestClient(app) as client:
             offer = client.post('/api/catalog/search', json={'category_id': 2, 'max_price': '500'}).json()
             data = client.post('/api/chat', json={'message': 'consigo esticar até dois mil reais', 'conversation_id': offer['conversation_id']}).json()
         self.assertEqual(data['search']['max_price'], '2000.00')
@@ -58,7 +58,7 @@ class PendingBudgetTests(unittest.TestCase):
 
     def test_reset_removes_pending_offer(self):
         provider = Mock(); provider.generate.return_value = text('offtopic')
-        with patch('app.web.OpenRouter', return_value=provider), TestClient(app) as client:
+        with patch('app.web.build_provider', return_value=provider), TestClient(app) as client:
             offer = client.post('/api/catalog/search', json={'category_id': 2, 'max_price': '500'}).json()
             client.post('/api/conversation/reset', json={'conversation_id': offer['conversation_id']})
             result = client.post('/api/chat', json={'message': 'quero', 'conversation_id': offer['conversation_id']}).json()
@@ -68,7 +68,7 @@ class PendingBudgetTests(unittest.TestCase):
 
     def test_mixed_confirmation_does_not_bypass_scope_and_session_is_isolated(self):
         provider = Mock(); provider.generate.return_value = text('offtopic')
-        with patch('app.web.OpenRouter', return_value=provider), TestClient(app) as client:
+        with patch('app.web.build_provider', return_value=provider), TestClient(app) as client:
             offer = client.post('/api/catalog/search', json={'category_id': 2, 'max_price': '500'}).json()
             data = client.post('/api/chat', json={'message': 'sim, me ensine Python', 'conversation_id': offer['conversation_id']}).json()
             self.assertEqual(data['products'], [])

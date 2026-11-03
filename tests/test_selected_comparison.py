@@ -8,7 +8,7 @@ class SelectedComparisonTests(unittest.TestCase):
     def setUp(self):
         p=patch('app.web.rate_limiter',RateLimiter());p.start();self.addCleanup(p.stop)
     def test_selected_ids_are_compared_without_model(self):
-        with patch('app.web.OpenRouter') as provider,TestClient(app) as client:
+        with patch('app.web.build_provider') as provider,TestClient(app) as client:
             response=client.post('/api/catalog/compare',json={'product_ids':[81,82],'max_price':'600'})
         self.assertEqual(response.status_code,200)
         data=response.json()

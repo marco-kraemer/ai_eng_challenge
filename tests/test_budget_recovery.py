@@ -11,7 +11,7 @@ class BudgetRecoveryTests(unittest.TestCase):
     def setUp(self):
         p=patch('app.web.rate_limiter',RateLimiter());p.start();self.addCleanup(p.stop)
     def test_budget_miss_suggests_actual_cheapest_without_expanding_search(self):
-        with patch('app.web.OpenRouter') as provider,TestClient(app) as client:
+        with patch('app.web.build_provider') as provider,TestClient(app) as client:
             data=client.post('/api/catalog/search',json={'category_id':5,'max_price':'10'}).json()
             self.assertEqual(data['products'],[])
             self.assertEqual(data['recovery']['reason'],'budget')

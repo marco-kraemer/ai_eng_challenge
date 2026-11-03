@@ -50,7 +50,7 @@ class VercelRuntimeTests(unittest.TestCase):
         from fastapi.testclient import TestClient
         from app.web import app
         from app.redis_state import StorageUnavailable
-        with patch('app.web.rate_limiter') as limiter, patch('app.web.OpenRouter') as provider, TestClient(app) as client:
+        with patch('app.web.rate_limiter') as limiter, patch('app.web.build_provider') as provider, TestClient(app) as client:
             limiter.allow.side_effect = StorageUnavailable('Internal secret details')
             response = client.post('/api/chat', json={'message': 'oi'})
         self.assertEqual(response.status_code, 503)

@@ -18,7 +18,7 @@ class GraphPolicyTests(unittest.TestCase):
             self.assertEqual(payload, EVIDENCE)
             return {'parts': [{'text': 'De segunda a sexta, das 9h às 18h. Manual, p. 2.'}]}
         provider.generate.side_effect = generate
-        with patch('app.web.OpenRouter', return_value=provider), patch('app.chat.get_policy_index') as index, TestClient(app) as client:
+        with patch('app.web.build_provider', return_value=provider), patch('app.chat.get_policy_index') as index, TestClient(app) as client:
             index.return_value.search.return_value = EVIDENCE
             response = client.post('/api/chat', json={'message': 'Que horas vocês abrem em datas especiais?'})
         self.assertEqual(response.status_code, 200)
@@ -31,7 +31,7 @@ class GraphPolicyTests(unittest.TestCase):
         for status, expected in [('not_found', 'encontrei'), ('error', 'consultar')]:
             provider = Mock()
             provider.generate.return_value = {'parts': [{'text': 'policies'}]}
-            with patch('app.web.OpenRouter', return_value=provider), patch('app.chat.get_policy_index') as index, TestClient(app) as client:
+            with patch('app.web.build_provider', return_value=provider), patch('app.chat.get_policy_index') as index, TestClient(app) as client:
                 index.return_value.search.return_value = {'status': status, 'items': [], 'warnings': []}
                 response = client.post('/api/chat', json={'message': 'Vocês oferecem aulas?'})
             self.assertEqual(response.status_code, 200)
@@ -46,7 +46,7 @@ class GraphPolicyTests(unittest.TestCase):
             {'parts': [{'text': 'policies'}]},
             {'parts': [{'text': 'Vou explicar a devolução online conforme o manual.'}]},
         ]
-        with patch('app.web.OpenRouter', return_value=provider), patch('app.chat.get_policy_index') as index, TestClient(app) as client:
+        with patch('app.web.build_provider', return_value=provider), patch('app.chat.get_policy_index') as index, TestClient(app) as client:
             index.return_value.search.return_value = EVIDENCE
             first = client.post('/api/chat', json={'message': 'Posso devolver um violão?'}).json()
             second = client.post('/api/chat', json={'action_id': 'online', 'conversation_id': first['conversation_id']})

@@ -17,7 +17,7 @@ class HoursFAQTests(unittest.TestCase):
                    ('Qual o horário de funcionamento?','09:00 às 13:00'),('Vocês abrem no sábado?','09:00 às 13:00'),
                    ('A loja abre na segunda-feira?','09:00 às 18:00'),('Abrem aos domingos?','Fechado'),
                    ('Qual o horário nos feriados?','Fechado')]
-        with patch('app.web.OpenRouter',return_value=provider),TestClient(app) as client:
+        with patch('app.web.build_provider',return_value=provider),TestClient(app) as client:
             for question,expected in questions:
                 response=client.post('/api/chat',json={'message':question})
                 self.assertEqual(response.status_code,200,question)
@@ -37,7 +37,7 @@ class HoursFAQTests(unittest.TestCase):
     def test_hour_shortcut_keeps_session_and_does_not_cache_user_context(self):
         from app.web import conversations
         provider=Mock();provider.generate.side_effect=RuntimeError('No inference')
-        with patch('app.web.OpenRouter',return_value=provider),TestClient(app) as client:
+        with patch('app.web.build_provider',return_value=provider),TestClient(app) as client:
             address=client.post('/api/chat',json={'message':'Onde vocês ficam?'}).json()
             hours=client.post('/api/chat',json={'message':'Que horas vocês abrem?','conversation_id':address['conversation_id']}).json()
         self.assertEqual(hours['conversation_id'],address['conversation_id'])

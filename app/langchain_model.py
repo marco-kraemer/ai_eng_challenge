@@ -1,6 +1,6 @@
-"""LangChain chat model over the existing bounded OpenRouter transport.
+"""LangChain chat model over the configured bounded Chat Completions transport.
 
-The transport owns credentials, free-model enforcement, HTTP errors and retries.
+The transport owns credentials, model allowlist enforcement, HTTP errors and retries.
 This adapter owns standard messages and tool-call correlation, not HTTP policy.
 """
 from __future__ import annotations
@@ -28,7 +28,7 @@ def history_messages(history: list[dict]) -> list[BaseMessage]:
 
 
 def transport_contents(messages: list[BaseMessage]) -> list[dict]:
-    """Keep document results in tool messages, including native OpenRouter IDs."""
+    """Keep document results in tool messages, including native provider IDs."""
     contents: list[dict] = []
     for message in messages:
         if isinstance(message, SystemMessage):
@@ -58,7 +58,7 @@ class StoreChatModel(BaseChatModel):
 
     @property
     def _llm_type(self) -> str:
-        return 'emporio-openrouter'
+        return 'emporio-chat-completions'
 
     def bind_tools(self, tools, *, tool_choice=None, **kwargs):
         if tool_choice is not None:

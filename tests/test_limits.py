@@ -18,14 +18,14 @@ class LimitTests(unittest.TestCase):
         self.assertTrue(limiter.allow('chat:one',1)[0])
 
     def test_large_body_is_rejected_before_model(self):
-        with patch('app.web.OpenRouter') as model,TestClient(app) as client:
+        with patch('app.web.build_provider') as model,TestClient(app) as client:
             response=client.post('/api/chat',content=b'x'*17000,headers={'Content-Type':'application/json'})
         self.assertEqual(response.status_code,413)
         model.assert_not_called()
 
     def test_429_and_retry_after(self):
         provider=Mock();provider.generate.side_effect=RuntimeError('unavailable')
-        with patch('app.web.rate_limiter',RateLimiter()),patch('app.web.CHAT_RATE',1),patch('app.web.OpenRouter',return_value=provider),TestClient(app) as client:
+        with patch('app.web.rate_limiter',RateLimiter()),patch('app.web.CHAT_RATE',1),patch('app.web.build_provider',return_value=provider),TestClient(app) as client:
             client.post('/api/chat',json={'message':'Olá'})
             response=client.post('/api/chat',json={'message':'Olá'})
         self.assertEqual(response.status_code,429)

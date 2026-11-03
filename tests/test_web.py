@@ -5,7 +5,7 @@ from app.web import app
 
 class WebTests(unittest.TestCase):
     def test_chat_page_and_unavailable_provider(self):
-        with patch('app.web.OpenRouter') as provider, TestClient(app) as client:
+        with patch('app.web.build_provider') as provider, TestClient(app) as client:
             provider.return_value.generate.side_effect = RuntimeError('unavailable')
             response = client.get('/')
             self.assertEqual(response.status_code, 200)

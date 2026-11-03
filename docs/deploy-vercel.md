@@ -18,8 +18,9 @@ Crie ou conecte um banco **Upstash Redis**, pelo Marketplace da Vercel ou pelo p
 
 | Variável | Valor |
 |---|---|
-| `OPENROUTER_API_KEY` | Chave do provedor, como segredo no painel |
-| `OPENROUTER_MODEL` | Modelo gratuito configurado; hoje `openrouter/free` |
+| `LLM_PROVIDER` | `openai` |
+| `OPEN_AI_KEY` | Chave da API OpenAI, como segredo no painel (`OPENAI_API_KEY` também é aceita) |
+| `OPENAI_MODEL` | `gpt-4.1-mini` |
 | `UPSTASH_REDIS_REST_URL` | Endpoint HTTPS REST da Upstash |
 | `UPSTASH_REDIS_REST_TOKEN` | Token REST com leitura e escrita; não usar o token somente de leitura |
 | `VERCEL_SUPPORT_LARGE_FUNCTIONS` | `1`; habilitar no ambiente do build (Production e Preview). Necessário para este backend com ONNX/NumPy, em projetos elegíveis |
@@ -49,7 +50,7 @@ O endereço do visitante é obtido dos headers sobrescritos pela Vercel apenas q
 3. Abrir a página, buscar um instrumento sem orçamento e consultar endereço/horários. Esses fluxos não precisam da LLM, mas as operações de sessão usam Redis.
 4. Continuar uma conversa, reiniciar e confirmar que o contexto anterior não reaparece. Confirmar a operação em produção após novos processos/inicializações.
 5. Consultar pedido de demonstração, comparar produtos e abrir uma pergunta que exija o manual.
-6. Com cota disponível, executar os testes de linguagem e personalidade do ticket 14. Hospedagem não resolve limites do OpenRouter.
+6. Com cota disponível, executar os testes de linguagem e personalidade do ticket 14. Hospedagem não resolve limites ou saldo da API de inferência.
 7. Configurar o acesso da URL de produção para que o avaliador não precise entrar na sua conta Vercel; testar em janela anônima. Pré-visualizações podem ter proteção de acesso.
 
 Ainda não há build remoto, Redis de produção configurado ou URL pública validados. Nenhum serviço pago foi contratado. Confirme os planos e os limites das contas antes de publicar.
