@@ -8,12 +8,19 @@ Funcionalidades: abertura por quatro caminhos de cliente, seletor ilustrado de i
 
 Público confirmado pelo usuário: CLIENTE FINAL. A interpretação anterior de apoio ao atendente foi corrigida. Foram removidos slogans, perguntas em terceira pessoa sobre outro cliente e o recurso de preparar/copiar rascunhos. A escolha de instrumento abre etapas explícitas de categoria e orçamento; não envia uma busca fixa de violão até R$ 600.
 
+## Migração para LangChain e LangGraph
+
+A conversa agora executa grafos compilados com mensagens e ferramentas LangChain. Há rotas explícitas para escopo, identidade, produtos, comparação, políticas e formulário de pedidos; os fluxos visuais determinísticos permanecem sem modelo. Arquitetura e reprodução: [LangChain e LangGraph](arquitetura-langgraph.md).
+
+As verificações Docker e de memória abaixo foram feitas antes desta migração. A imagem precisa ser reconstruída e medida novamente para esta versão.
+
 ## Validações
 
 - Imagem Docker construída e executada com limite de 1 GB: página, API protegida de pedidos, ausência de chave embutida e recuperação híbrida com embeddings reais passam; pico de RSS aproximado de 531 MB no teste com cache montado.
 - Instalação das dependências em um segundo ambiente Python 3.12 limpo, sem usar pacotes da `.venv` do projeto.
-- 49 testes Python; verificação de tipos com mypy; teste Node de seletor, valores BRL, orçamento opcional, IDs de conversa, fontes e descarte de resposta atrasada.
-- Chromium real: desktop 1440×1000, celular 390×844, navegação por teclado, seleção entre nove categorias ilustradas, escolha/edição de preço e ausência de orçamento, catálogo real, ações contextuais, fontes expansíveis, reinício, repetição após erro, movimento reduzido e formulário de pedido sem enviar e-mail ao chat. Apenas as APIs do modelo e de verificação de pedido são simuladas nessa verificação; categorias, ilustrações e busca de catálogo são reais e não consomem cota do modelo.
+- 73 testes Python; verificação de tipos com mypy; teste Node de seletor, valores BRL, orçamento opcional, IDs de conversa, fontes e descarte de resposta atrasada.
+- Chromium real: desktop 1440×1000, celular 390×844, navegação por teclado, seleção entre categorias com estoque e esboços monocromáticos, escolha/edição de preço e ausência de orçamento, catálogo real, ações contextuais, fontes expansíveis, reinício, repetição após erro, movimento reduzido e formulário de pedido sem enviar e-mail ao chat. Apenas as APIs do modelo e de verificação de pedido são simuladas nessa verificação; categorias, ilustrações e busca de catálogo são reais e não consomem cota do modelo.
+- Chromium com servidor temporário: interface → HTTP → grafos → comparação e busca híbrida real → recusa → formulário de pedido. Somente a inferência do modelo foi simulada nesse teste adicional (`tests/browser_graph_smoke.py`).
 - Avaliação local de recuperação com embeddings reais: 20/22 casos de desenvolvimento positivos na busca híbrida. Casos perdidos e falsos positivos estão publicados no JSON e na documentação da busca.
 - Cinco exemplos reais com OpenRouter documentados separadamente. O teste de continuação da versão anterior recebeu 429 do provedor. Nesta revisão, o catálogo guiado funciona independentemente dessa cota; o recurso de rascunho foi removido. Os testes não são apresentados como prova de disponibilidade contínua da API de modelo.
 
@@ -61,3 +68,13 @@ docker run --rm --env-file .env -p 127.0.0.1:8000:8000 \
 ```
 
 Esse detalhe é específico de ambientes com proxy que termina TLS; não é necessário copiar certificados de sessão para o repositório. O comando padrão de inicialização e o comando do healthcheck do Docker também foram executados com sucesso, sem chave de modelo na imagem.
+
+## Revisão do catálogo guiado
+
+O seletor exibe seis categorias no catálogo atual, calculadas pelos produtos ativos com estoque. Ausência por orçamento oferece o menor preço real e exige confirmação; ausência de estoque e erro de consulta são respostas distintas. O orçamento pode ser editado preservando a categoria. A seleção de dois a quatro cards produz comparação determinística, sem LLM, com dados atuais.
+
+O smoke adicional de catálogo usa navegador e APIs reais e impede qualquer chamada ao chat. Oito jornadas reproduzíveis passaram no relatório `avaliacao-jornadas.json`; a inferência é simulada, sem alegação de avaliação do modelo ao vivo. Os esboços são imagens de categoria e não fotografias de modelos específicos.
+
+## Preparação para Vercel
+
+A configuração atual para Vercel/FastAPI, Upstash e RAG pré-calculado está em [Deploy na Vercel](deploy-vercel.md). Essa preparação substitui a escolha de hospedagem sugerida anteriormente, mas ainda não representa uma publicação ou build remoto validado. A pendência de interpretação com modelo real permanece no ticket 14.

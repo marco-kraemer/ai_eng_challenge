@@ -1,0 +1,48 @@
+{
+  "model_mode": "scripted; not a live model quality evaluation",
+  "data_mode": "real CSVs and local hybrid PDF retrieval",
+  "total": 8,
+  "passed": 8,
+  "cases": [
+    {
+      "id": "orcamento-insuficiente",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "id": "instrumento-sem-estoque",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "id": "comparacao-direta",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "id": "continuidade-apos-selecao",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "id": "recusa-de-programacao",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "id": "horario-com-fonte",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "id": "identidade-da-loja",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "id": "pedido-pelo-formulario",
+      "passed": true,
+      "errors": []
+    }
+  ]
+}
