@@ -147,4 +147,3 @@ class CategoryScopeTests(unittest.TestCase):
                     self.assertTrue(all(p['category_id'] in ids for p in data['products']))
                 else:
                     self.assertNotIn('category_id', store.state(token)['preferences'])
-
