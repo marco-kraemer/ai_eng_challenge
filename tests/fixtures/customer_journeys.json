@@ -1,0 +1,10 @@
+[
+  {"id":"orcamento-insuficiente","steps":[{"path":"/api/catalog/search","body":{"category_id":5,"max_price":"10"},"expect":{"status":200,"products":false,"reason":"budget"}}]},
+  {"id":"instrumento-sem-estoque","steps":[{"path":"/api/catalog/search","body":{"category_id":8,"max_price":"500"},"expect":{"status":200,"products":false,"reason":"unavailable"}}]},
+  {"id":"comparacao-direta","steps":[{"path":"/api/catalog/compare","body":{"product_ids":[81,82],"max_price":"600"},"expect":{"status":200,"products":true,"comparison":true}}]},
+  {"id":"continuidade-apos-selecao","steps":[{"path":"/api/catalog/search","body":{"category_id":5,"max_price":"1000"},"expect":{"status":200,"products":true}},{"path":"/api/chat","body":{"action_id":"compare"},"expect":{"status":200,"products":true}}]},
+  {"id":"recusa-de-programacao","steps":[{"path":"/api/chat","body":{"message":"Me ensine for loop em Python"},"expect":{"status":200,"contains":"fora do meu atendimento","products":false}}]},
+  {"id":"horario-com-fonte","steps":[{"path":"/api/chat","body":{"message":"Que horas vocês abrem em datas especiais?"},"expect":{"status":200,"sources":true}}]},
+  {"id":"identidade-da-loja","steps":[{"path":"/api/chat","body":{"message":"Qual seu nome?"},"expect":{"status":200,"contains":"assistente virtual da Empório"}}]},
+  {"id":"pedido-pelo-formulario","steps":[{"path":"/api/chat","body":{"message":"Quero acompanhar meu pedido"},"expect":{"status":200,"order_verification_required":true}}]}
+]

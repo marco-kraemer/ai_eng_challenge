@@ -1,10 +1,17 @@
 import tempfile
+import os
 import unittest
 from unittest.mock import patch, MagicMock
 import numpy as np
 from app.embeddings import LocalEncoder
 
 class EmbeddingTests(unittest.TestCase):
+    def test_vercel_loads_only_prebuilt_local_model_files(self):
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {'VERCEL': '1'}), patch('app.embeddings.TextEmbedding') as embedding:
+            embedding.list_supported_models.return_value = [{'model': LocalEncoder.model_id}]
+            LocalEncoder(directory)
+            self.assertTrue(embedding.call_args.kwargs.get('local_files_only'))
+
     def test_e5_prefixes_and_normalization(self):
         with tempfile.TemporaryDirectory() as directory, patch('app.embeddings.TextEmbedding') as embedding:
             embedding.list_supported_models.return_value = [{'model': LocalEncoder.model_id}]

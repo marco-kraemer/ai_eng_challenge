@@ -5,6 +5,7 @@ import threading
 from functools import lru_cache
 from pathlib import Path
 from app.policies import PolicyIndex
+from app.runtime import policy_cache_dir, seed_policy_cache
 
 ROOT = Path(__file__).resolve().parent.parent
 _build_lock = threading.Lock()
@@ -12,11 +13,14 @@ _build_lock = threading.Lock()
 @lru_cache(maxsize=1)
 def _encoder():
     from app.embeddings import LocalEncoder
-    return LocalEncoder(str(Path(os.getenv('POLICY_CACHE_DIR', ROOT / '.cache')) / 'embeddings'))
+    cache = policy_cache_dir()
+    if os.getenv('VERCEL') == '1':
+        seed_policy_cache(ROOT / '.rag-bundle', cache)
+    return LocalEncoder(str(cache / 'embeddings'))
 
 @lru_cache(maxsize=2)
 def _build(pdf: str, fingerprint: str) -> PolicyIndex:
-    return PolicyIndex(Path(pdf), Path(os.getenv('POLICY_CACHE_DIR', ROOT / '.cache')) / 'policies', _encoder())
+    return PolicyIndex(Path(pdf), policy_cache_dir() / 'policies', _encoder())
 
 def get_policy_index(directory: Path) -> PolicyIndex:
     pdf = directory / 'políticas_da_loja.pdf'

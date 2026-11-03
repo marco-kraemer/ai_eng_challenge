@@ -1,8 +1,18 @@
 """Read-only structured catalog access; read fresh data on every request."""
 import csv
 import json
+import re
+import unicodedata
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
+
+
+def name_tokens(value: str) -> set[str]:
+    """Compare words and model identifiers without accents/case or GD-20/GD 20 separators."""
+    normalized = ''.join(char for char in unicodedata.normalize('NFKD', value.casefold())
+                         if not unicodedata.combining(char))
+    normalized = re.sub(r'(?<=[a-z])[\s-]+(?=\d)', '', normalized)
+    return set(re.findall(r'[a-z0-9]+', normalized))
 
 
 class Catalog:
@@ -10,8 +20,11 @@ class Catalog:
         self.directory = directory
 
     def search(self, *, category_id=None, min_price='0', max_price=None,
-               in_stock=True, status='active', limit=5, offset=0):
+               in_stock=True, status='active', limit=5, offset=0, query=None):
         try:
+            if query is not None and (not isinstance(query, str) or not 1 <= len(query) <= 200 or not name_tokens(query)):
+                raise ValueError('Invalid name query')
+            terms = name_tokens(query) if query is not None else set()
             low = Decimal(str(min_price))
             high = Decimal(str(max_price)) if max_price is not None else None
             if (not low.is_finite() or low < 0 or
@@ -30,7 +43,7 @@ class Catalog:
                     price = Decimal(row['price_brl'])
                     stock = int(row['stock_quantity'])
                     category = int(row['category_id'])
-                    if (price < low or high is not None and price > high or
+                    if (not terms.issubset(name_tokens(row['name'])) or price < low or high is not None and price > high or
                         category_id is not None and category != category_id or
                         in_stock and stock <= 0 or row['status'] != status):
                         continue
@@ -82,3 +95,32 @@ class Catalog:
             return {'status':'found','items':items}
         except (OSError,ValueError,KeyError):
             return {'status':'error','items':[]}
+
+    def available_categories(self) -> dict:
+        categories = self.categories()
+        if categories['status'] == 'error':
+            return categories
+        try:
+            with (self.directory / 'products.csv').open(newline='', encoding='utf-8-sig') as stream:
+                available = {int(row['category_id']) for row in csv.DictReader(stream)
+                             if row['status'] == 'active' and int(row['stock_quantity']) > 0}
+            items = [item for item in categories['items'] if item['category_id'] in available]
+            return {'status': 'found' if items else 'not_found', 'items': items}
+        except (OSError, ValueError, KeyError):
+            return {'status': 'error', 'items': []}
+
+    def cheapest_available(self, category_id: int) -> dict:
+        """Consider every matching row, including products beyond the first page."""
+        offset = 0
+        cheapest = None
+        while True:
+            page = self.search(category_id=category_id, limit=10, offset=offset)
+            if page['status'] in ('error', 'invalid'):
+                return page
+            for product in page['items']:
+                if cheapest is None or Decimal(product['price_brl']) < Decimal(cheapest['price_brl']):
+                    cheapest = product
+            if page.get('next_offset') is None:
+                break
+            offset = page['next_offset']
+        return {'status': 'found' if cheapest else 'not_found', 'items': [cheapest] if cheapest else []}

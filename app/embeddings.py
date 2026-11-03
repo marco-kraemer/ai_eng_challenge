@@ -1,5 +1,6 @@
 """Quantized multilingual E5 on CPU, without PyTorch or a remote embedding API."""
 from pathlib import Path
+import os
 import numpy as np
 from fastembed import TextEmbedding
 from fastembed.common.model_description import ModelSource, PoolingType
@@ -16,7 +17,10 @@ class LocalEncoder:
                 dim=384, model_file='onnx/model_quantized.onnx',
                 description='Multilingual E5 small, quantized ONNX, query/passage prefixes applied by app.',
                 license='mit', size_in_gb=0.12)
-        self.model = TextEmbedding(model_name=self.model_id, cache_dir=str(Path(cache)), threads=2)
+        model_dir = Path(cache) / 'model'
+        self.model = TextEmbedding(model_name=self.model_id, cache_dir=str(Path(cache)), threads=2,
+                                   local_files_only=os.getenv('VERCEL') == '1',
+                                   specific_model_path=str(model_dir) if (model_dir / 'onnx/model_quantized.onnx').is_file() else None)
 
     def passages(self, texts: list[str]) -> np.ndarray:
         return unit(np.asarray(list(self.model.embed(['passage: ' + t for t in texts], batch_size=8))))

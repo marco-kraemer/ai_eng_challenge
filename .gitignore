@@ -3,6 +3,9 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .env
+.vercel/
+.rag-bundle/
+.cache-build/
 
 .cache/
 

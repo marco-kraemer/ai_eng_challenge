@@ -6,7 +6,26 @@ import secrets
 import threading
 import time
 from dataclasses import dataclass, field
-from typing import Callable
+from typing import Callable, TypedDict
+
+class ConversationContext(TypedDict, total=False):
+    preferences: dict
+    product_ids: list[int]
+    allowed_actions: list[str]
+    topic: str
+    purchase_channel: str
+    pending_budget: dict
+    pending_question: str
+
+
+def append_turn(messages: list[dict], user: str, answer: str):
+    """Apply the same privacy and history bounds to local and shared sessions."""
+    for role, text in [('user', user), ('model', answer)]:
+        text = re.sub(r'[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}', '[e-mail omitido]', text)
+        messages.append({'role': role, 'parts': [{'text': text[:2000]}]})
+    while len(messages) > 12 or sum(len(m['parts'][0]['text']) for m in messages) > 8000:
+        del messages[:2]
+
 
 @dataclass
 class Conversation:
@@ -51,13 +70,7 @@ class ConversationStore:
             if token not in self.sessions:
                 return
             conversation = self.sessions[token]
-            for role, text in [('user',user),('model',answer)]:
-                # Verification credentials never belong in reusable conversational context.
-                text = re.sub(r'[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}', '[e-mail omitido]', text)
-                conversation.messages.append({'role':role,'parts':[{'text':text[:2000]}]})
-            while (len(conversation.messages)>12 or
-                   sum(len(m['parts'][0]['text']) for m in conversation.messages)>8000):
-                del conversation.messages[:2]
+            append_turn(conversation.messages, user, answer)
             conversation.state = copy.deepcopy(state or {})
             conversation.touched = self.clock()
 

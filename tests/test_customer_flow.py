@@ -10,7 +10,9 @@ class CustomerFlowTests(unittest.TestCase):
             response=client.get('/api/categories')
         self.assertEqual(response.status_code,200)
         categories=response.json()['categories']
-        self.assertEqual(len(categories),9)
+        from app.catalog import Catalog
+        from pathlib import Path
+        self.assertEqual({c['category_id'] for c in categories}, {c['category_id'] for c in Catalog(Path('data')).available_categories()['items']})
         guitar=next(c for c in categories if c['category_id']==5)
         self.assertEqual(guitar['name'],'Violões')
         self.assertIn('violao',guitar['illustration'])

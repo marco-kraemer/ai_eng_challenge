@@ -15,7 +15,7 @@ class PolicyChatTests(unittest.TestCase):
             {'parts':[{'text':'Abrimos às 9h de segunda a sábado. Fonte: manual, p. 2.'}]}]
         with patch('app.chat.get_policy_index') as factory:
             factory.return_value.search.return_value=RESULT
-            result=StoreAssistant(provider,Catalog(Path('data'))).reply('Que horas vocês abrem?')
+            result=StoreAssistant(provider,Catalog(Path('data'))).reply('Que horas vocês abrem em datas especiais?')
         self.assertEqual(result['sources'][0]['pages'],[2])
         self.assertIn('9h', result['message'])
         self.assertEqual(result['products'],[])
@@ -46,7 +46,7 @@ class PolicyChatTests(unittest.TestCase):
             {'parts':[{'text':'De segunda a sexta, das 9h às 18h. Manual, p. 2.'}]}]
         with patch('app.web.OpenRouter',return_value=provider), patch('app.chat.get_policy_index') as index, TestClient(app) as client:
             index.return_value.search.return_value=RESULT
-            response=client.post('/api/chat',json={'message':'Que horas vocês abrem?'})
+            response=client.post('/api/chat',json={'message':'Que horas vocês abrem em datas especiais?'})
         self.assertEqual(response.status_code,200)
         self.assertEqual(response.json()['sources'][0]['id'],'s2-0')
         self.assertIn('18:00',response.json()['sources'][0]['text'])

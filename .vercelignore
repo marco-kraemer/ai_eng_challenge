@@ -1,0 +1,14 @@
+.git
+.venv
+.cache
+.rag-bundle
+.cache-build
+.mypy_cache
+.pytest_cache
+.scratch
+tests
+docs
+.env
+.env.*
+__pycache__
+**/__pycache__
