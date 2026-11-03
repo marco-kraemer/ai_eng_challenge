@@ -30,3 +30,11 @@ Cota disponível no OpenRouter. O provedor retornou HTTP 429 na revalidação. N
 - Orientação das ferramentas corrigida: descobrir IDs com `list_categories` e filtrar tipo de instrumento por `category_id`, sem dicionários de frases em Python.
 - Revalidação real: 4/4, entre 3,07 e 4,95 segundos. Relatório: `docs/avaliacao-openai-orcamento.json`.
 - Validação parcial, com histórico pré-carregado: não encerra critérios de novas formulações, isolamento/reset, voz e grounding de todas as afirmações.
+
+## Escopo de categorias — 2026-11-03
+- Catálogo e UI agora aceitam uma categoria, união de categorias ou todas.
+- Classificação com plano JSON estruturado da consulta, taxonomia atual e separação entre mensagem atual e histórico. Backend executa um plano por turno antes da redação e preserva o escopo nos cards/resumo/proposta.
+- Duas conversas reais de seis turnos passaram (relato original e paráfrases), mais quatro continuações de orçamento: 16/16 nos critérios registrados em `docs/avaliacao-categorias-contexto.json`.
+- Essa validação não encerra os critérios amplos de persona, grounding e adversariais do ticket.
+
+- Uma checagem em produção reproduziu herança indevida de categoria mesmo após a rodada local. A resolução foi separada em leitura contextual de filtros e extração do escopo da mensagem atual, com citação literal para ampliar ao catálogo geral. A taxonomia é referência do sistema, não menção do cliente. Após o ajuste final, foram repetidas as duas conversas e as quatro continuações de orçamento: 16/16 nos critérios registrados. Temperatura zero reduz variação; as limitações de LLM continuam explícitas.

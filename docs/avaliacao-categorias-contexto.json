@@ -15,6 +15,7 @@
     {
       "provider": "configured live provider",
       "model": "gpt-4.1-mini-2025-04-14",
+      "variant": "reported",
       "mode": "real multi-turn HTTP, CSV catalog and in-memory isolated session; not a statistical quality benchmark",
       "total": 6,
       "passed": 6,
@@ -24,7 +25,7 @@
           "question": "quero violão, não tenho muito dinheiro",
           "passed": true,
           "status": 200,
-          "seconds": 2.78,
+          "seconds": 3.08,
           "search": {
             "category_id": 5,
             "category_ids": [
@@ -58,17 +59,20 @@
           "classification": [
             [
               "{\"intent\":\"store\",\"dismiss_budget_offer\":false,\"catalog_search\":{\"category_scope\":\"named\",\"category_ids\":[5],\"query\":null,\"min_price\":null,\"max_price\":null,\"in_stock\":true}}"
+            ],
+            [
+              "{\"general_catalog_request\":null,\"category_ids\":[5]}"
             ]
           ],
           "tools": [],
-          "message": "Tenho quatro violões clássicos com cordas de nylon que são bons para quem não tem muito dinheiro. O Tagima Memphis AC-39 está entre os mais acessíveis, simples e confortável para iniciar por R$ 429,90. O Yamaha C40 é popular para estudantes, com madeira Spruce no tampo e Meranti nas laterais, por R$ 599,90. Se quiser algo com madeira sólida no tampo e um custo mais alto, tem o Yamaha C70 por R$ 849,00. E tem o Giannini GN-15, com tampo em cedro e timbre mais encorpado, por R$ 689,00. Quer detalhes de algum?"
+          "message": "Tenho algumas opções de violão para você que está começando e quer economizar. O Tagima Memphis AC-39 é o mais barato, com cordas de nylon, leve e confortável para estudo, por R$ 429,90. Também tem o Yamaha C40, um clássico para iniciantes, por R$ 599,90, e o Giannini GN-15, com tampo em cedro, por R$ 689,00. Quer detalhes de algum desses?"
         },
         {
           "case": "broaden-to-all",
           "question": "Me dê instrumentos até R$ 1.000.",
           "passed": true,
           "status": 200,
-          "seconds": 2.56,
+          "seconds": 3.11,
           "search": {
             "category_id": null,
             "category_ids": [],
@@ -93,18 +97,21 @@
           "pending_budget": {},
           "classification": [
             [
-              "{\"intent\":\"store\",\"dismiss_budget_offer\":false,\"catalog_search\":{\"category_scope\":\"all\",\"category_ids\":[],\"query\":null,\"min_price\":null,\"max_price\":\"1000.00\",\"in_stock\":true}}"
+              "{\"intent\":\"store\",\"dismiss_budget_offer\":false,\"catalog_search\":{\"category_scope\":\"named\",\"category_ids\":[5],\"query\":null,\"min_price\":null,\"max_price\":\"1000.00\",\"in_stock\":true}}"
+            ],
+            [
+              "{\"general_catalog_request\":\"instrumentos\",\"category_ids\":[]}"
             ]
           ],
           "tools": [],
-          "message": "Tenho alguns instrumentos até R$ 1.000 para você: dois violões clássicos Yamaha, o C40 por R$ 599,90 com tampo em Spruce e o C70 por R$ 849,00 com tampo sólido, e dois ukuleles soprano, o Kala KA-15S por R$ 199,90 e o Ohana SK-10 por R$ 249,90, ambos com corpo em mogno. Quer saber mais sobre algum deles?"
+          "message": "Tenho quatro opções até R$ 1.000,00: dois violões clássicos Yamaha C40 (R$ 599,90) e C70 (R$ 849,00), ambos com cordas de nylon e bom para iniciantes; e dois ukuleles soprano, o Kala KA-15S (R$ 199,90) e o Ohana SK-10 (R$ 249,90), que são menores e fáceis para começar. Quer saber mais sobre algum deles?"
         },
         {
           "case": "multiple-categories",
           "question": "Quero ver violões e ukuleles até seiscentos reais.",
           "passed": true,
           "status": 200,
-          "seconds": 2.29,
+          "seconds": 3.07,
           "search": {
             "category_id": null,
             "category_ids": [
@@ -149,17 +156,20 @@
           "classification": [
             [
               "{\"intent\":\"store\",\"dismiss_budget_offer\":false,\"catalog_search\":{\"category_scope\":\"named\",\"category_ids\":[5,9],\"query\":null,\"min_price\":null,\"max_price\":\"600.00\",\"in_stock\":true}}"
+            ],
+            [
+              "{\"general_catalog_request\":null,\"category_ids\":[5,9]}"
             ]
           ],
           "tools": [],
-          "message": "Tenho quatro opções até R$ 600 para você: os violões Yamaha C40 e Tagima Memphis AC-39, ambos clássicos com cordas de nylon, e os ukuleles Kala KA-15S e Ohana SK-10, oba soprano com corpo em mogno e som tradicional. Os violões são ótimos para iniciantes, com madeiras diferentes no tampo e corpo, e os ukuleles são leves e fáceis para quem quer algo portátil. Quer detalhes sobre algum?"
+          "message": "Aqui estão quatro opções até R$ 600,00: dois violões clássicos, o Yamaha C40 (R$ 599,90) com tampo em spruce e o Tagima Memphis AC-39 (R$ 429,90), leve e confortável para estudo; e dois ukuleles soprano, o Kala KA-15S (R$ 199,90) e o Ohana SK-10 (R$ 249,90), ambos com corpo em mogno e cordas nylon. Quer detalhes de algum?"
         },
         {
           "case": "switch-with-pending-offer",
           "question": "Agora só teclados com esse mesmo limite.",
           "passed": true,
           "status": 200,
-          "seconds": 2.24,
+          "seconds": 3.16,
           "search": {
             "category_id": 4,
             "category_ids": [
@@ -192,6 +202,9 @@
           "classification": [
             [
               "{\"intent\":\"store\",\"dismiss_budget_offer\":false,\"catalog_search\":{\"category_scope\":\"named\",\"category_ids\":[4],\"query\":null,\"min_price\":null,\"max_price\":\"600.00\",\"in_stock\":true}}"
+            ],
+            [
+              "{\"general_catalog_request\":null,\"category_ids\":[4]}"
             ]
           ],
           "tools": [],
@@ -202,7 +215,7 @@
           "question": "Pode mostrar por esse valor sugerido.",
           "passed": true,
           "status": 200,
-          "seconds": 2.3,
+          "seconds": 2.59,
           "search": {
             "category_id": 4,
             "category_ids": [
@@ -234,17 +247,20 @@
           "classification": [
             [
               "{\"intent\":\"store\",\"dismiss_budget_offer\":false,\"catalog_search\":{\"category_scope\":\"named\",\"category_ids\":[4],\"query\":null,\"min_price\":null,\"max_price\":\"1127.00\",\"in_stock\":true}}"
+            ],
+            [
+              "{\"general_catalog_request\":null,\"category_ids\":[]}"
             ]
           ],
           "tools": [],
-          "message": "Tem disponível um teclado sintetizador Korg Synth 1 Pro por R$ 1.127,00. Ele tem 61 teclas, é tipo sintetizador, com polifonia de 128 vozes, ideal para quem quer algo versátil para produções e arranjos ao vivo. Se quiser, te passo mais detalhes."
+          "message": "Tem um teclado sintetizador Korg Synth 1 Pro por R$ 1.127,00, com 61 teclas, polifonia de 128 vozes e som versátil para produções e arranjos ao vivo. É o único disponível até esse valor. Quer saber mais ou outras opções?"
         },
         {
           "case": "clear-all-filters",
           "question": "Agora me mostra todos os tipos de instrumento, sem limite de preço.",
           "passed": true,
           "status": 200,
-          "seconds": 2.42,
+          "seconds": 2.72,
           "search": {
             "category_id": null,
             "category_ids": [],
@@ -269,13 +285,15 @@
           "classification": [
             [
               "{\"intent\":\"store\",\"dismiss_budget_offer\":false,\"catalog_search\":{\"category_scope\":\"all\",\"category_ids\":[],\"query\":null,\"min_price\":null,\"max_price\":null,\"in_stock\":true}}"
+            ],
+            [
+              "{\"general_catalog_request\":\"todos os tipos de instrumento\",\"category_ids\":[]}"
             ]
           ],
           "tools": [],
-          "message": "Tenho para você um violão clássico Yamaha C40 por R$ 599,90, ukulele soprano Kala KA-15S por R$ 199,90, uma Fender Stratocaster American Pro II por R$ 12.500,00 e um baixo elétrico Music Man Bass 1X por R$ 8.732,00. São estilos e usos bem diferentes, desde iniciante até profissional. Quer uma opção mais específica para o que quer tocar?"
+          "message": "Aqui estão alguns instrumentos de diferentes tipos, sem limite de preço: o violão clássico Yamaha C40, ideal para iniciantes; o ukulele soprano Kala KA-15S, leve e doce; a guitarra elétrica Fender Stratocaster American Pro II, com timbre versátil; e o baixo elétrico Music Man Bass 1X, ótimo para funk e rock. Quer detalhes ou outras categorias?"
         }
-      ],
-      "variant": "reported"
+      ]
     },
     {
       "provider": "configured live provider",
@@ -290,7 +308,7 @@
           "question": "Troca isso por um violão, preciso de algo em conta.",
           "passed": true,
           "status": 200,
-          "seconds": 2.35,
+          "seconds": 3.33,
           "search": {
             "category_id": 5,
             "category_ids": [
@@ -324,17 +342,20 @@
           "classification": [
             [
               "{\"intent\":\"store\",\"dismiss_budget_offer\":false,\"catalog_search\":{\"category_scope\":\"named\",\"category_ids\":[5],\"query\":null,\"min_price\":null,\"max_price\":null,\"in_stock\":true}}"
+            ],
+            [
+              "{\"general_catalog_request\":null,\"category_ids\":[5]}"
             ]
           ],
           "tools": [],
-          "message": "Posso te mostrar alguns violões em conta que temos: o Tagima Memphis AC-39, bom para quem está começando; o Yamaha C40, com tampo em spruce, ideal para iniciantes; o Giannini GN-15, com tampo de cedro e som encorpado; e o Yamaha C70, para nível intermediário com tampo sólido. Quer saber mais detalhes de algum deles?"
+          "message": "Tenho quatro violões clássicos em conta para você: o Tagima Memphis AC-39 por R$ 429,90, ideal para iniciantes; o Yamaha C40 por R$ 599,90, com boa projeção sonora; o Giannini GN-15 por R$ 689,00, com som mais encorpado; e o Yamaha C70 por R$ 849,00, para nível intermediário com tampo sólido. Quer detalhes de algum deles ou ajuda para escolher?"
         },
         {
           "case": "broaden-to-all",
           "question": "Quero opções do catálogo até mil reais, de qualquer tipo.",
           "passed": true,
           "status": 200,
-          "seconds": 2.5,
+          "seconds": 2.92,
           "search": {
             "category_id": null,
             "category_ids": [],
@@ -360,17 +381,20 @@
           "classification": [
             [
               "{\"intent\":\"store\",\"dismiss_budget_offer\":false,\"catalog_search\":{\"category_scope\":\"all\",\"category_ids\":[],\"query\":null,\"min_price\":null,\"max_price\":\"1000.00\",\"in_stock\":true}}"
+            ],
+            [
+              "{\"general_catalog_request\":\"catálogo até mil reais, de qualquer tipo\",\"category_ids\":[]}"
             ]
           ],
           "tools": [],
-          "message": "Na faixa até R$ 1.000,00, temos violões e ukuleles disponíveis. O Yamaha C40 é um violão clássico para iniciantes com tampo em spruce, o Yamaha C70 é um violão mais intermediário com tampo sólido, ambos com cordas de nylon. Também há ukuleles soprano Kala KA-15S e Ohana SK-10, ambos com corpo em mogno e cordas nylon, leves e fáceis de tocar. Tem interesse em algum desses modelos?"
+          "message": "Tenho quatro opções até R$ 1.000,00: dois violões clássicos Yamaha C40 e C70, com tampo em spruce, para iniciantes e nível intermediário; e dois ukuleles soprano, o Kala KA-15S e o Ohana SK-10, ambos com corpo em mogno e cordas nylon, bons para iniciantes e com som doce. Quer saber mais sobre algum deles?"
         },
         {
           "case": "multiple-categories",
           "question": "Pode restringir a ukulele ou violão? Meu teto agora é seiscentos.",
           "passed": true,
           "status": 200,
-          "seconds": 2.21,
+          "seconds": 2.92,
           "search": {
             "category_id": null,
             "category_ids": [
@@ -415,17 +439,20 @@
           "classification": [
             [
               "{\"intent\":\"store\",\"dismiss_budget_offer\":false,\"catalog_search\":{\"category_scope\":\"named\",\"category_ids\":[5,9],\"query\":null,\"min_price\":null,\"max_price\":\"600.00\",\"in_stock\":true}}"
+            ],
+            [
+              "{\"general_catalog_request\":null,\"category_ids\":[5,9]}"
             ]
           ],
           "tools": [],
-          "message": "Tenho algumas opções dentro desse preço: no violão, o Yamaha C40 com tampo em spruce, e o Tagima Memphis AC-39 com corpo leve. Para ukuleles, há o Kala KA-15S e o Ohana SK-10, ambos soprano e com corpo em mogno, ótimos para iniciantes. Quer que eu detalhe algum deles?"
+          "message": "Tenho quatro opções até R$ 600,00 para violão e ukulele. Dois violões clássicos: Yamaha C40, com tampo em spruce, e Tagima Memphis AC-39, com corpo leve em linden, ambos com cordas de nylon, bons para iniciantes. E dois ukuleles soprano: Kala KA-15S e Ohana SK-10, com corpo em mogno e cordas nylon, leves e com som doce. Quer detalhes de algum?"
         },
         {
           "case": "switch-with-pending-offer",
           "question": "E se eu escolher um teclado? O orçamento continua igual.",
           "passed": true,
           "status": 200,
-          "seconds": 2.03,
+          "seconds": 2.78,
           "search": {
             "category_id": 4,
             "category_ids": [
@@ -458,6 +485,9 @@
           "classification": [
             [
               "{\"intent\":\"store\",\"dismiss_budget_offer\":false,\"catalog_search\":{\"category_scope\":\"named\",\"category_ids\":[4],\"query\":null,\"min_price\":null,\"max_price\":\"600.00\",\"in_stock\":true}}"
+            ],
+            [
+              "{\"general_catalog_request\":null,\"category_ids\":[4]}"
             ]
           ],
           "tools": [],
@@ -468,7 +498,7 @@
           "question": "Tá bom, pode abrir as opções que cabem no valor que você acabou de sugerir.",
           "passed": true,
           "status": 200,
-          "seconds": 2.35,
+          "seconds": 2.84,
           "search": {
             "category_id": 4,
             "category_ids": [
@@ -499,18 +529,21 @@
           "pending_budget": {},
           "classification": [
             [
-              "{\"intent\":\"store\",\"dismiss_budget_offer\":false,\"catalog_search\":{\"category_scope\":\"named\",\"category_ids\":[4],\"query\":null,\"min_price\":null,\"max_price\":\"1127.00\",\"in_stock\":true}}"
+              "{\"intent\":\"store\",\"dismiss_budget_offer\":false,\"catalog_search\":{\"category_scope\":\"previous\",\"category_ids\":[4],\"query\":null,\"min_price\":null,\"max_price\":\"1127.00\",\"in_stock\":true}}"
+            ],
+            [
+              "{\"general_catalog_request\":null,\"category_ids\":[]}"
             ]
           ],
           "tools": [],
-          "message": "Tenho um modelo disponível até R$ 1.127,00: o Teclado Sintetizador Korg Synth 1 Pro, com 61 teclas, 128 notas de polifonia e som de sintetizador. Ele é versátil para produções e arranjos. Quer saber mais detalhes ou outras opções?"
+          "message": "Tem um teclado sintetizador Korg Synth 1 Pro por R$ 1.127,00, com 61 teclas, polifonia de 128 vozes e motor sonoro SuperNATURAL, bom para produções e arranjos ao vivo. Quer mais detalhes ou ajuda para fechar a compra?"
         },
         {
           "case": "clear-all-filters",
           "question": "Não quero ficar preso a nenhum instrumento nem preço; mostre possibilidades variadas.",
           "passed": true,
           "status": 200,
-          "seconds": 2.47,
+          "seconds": 2.73,
           "search": {
             "category_id": null,
             "category_ids": [],
@@ -535,10 +568,13 @@
           "classification": [
             [
               "{\"intent\":\"store\",\"dismiss_budget_offer\":false,\"catalog_search\":{\"category_scope\":\"all\",\"category_ids\":[],\"query\":null,\"min_price\":null,\"max_price\":null,\"in_stock\":true}}"
+            ],
+            [
+              "{\"general_catalog_request\":\"possibilidades variadas\",\"category_ids\":[]}"
             ]
           ],
           "tools": [],
-          "message": "Tenho opções variadas para você: o violão Yamaha C40, clássico e acessível; o ukulele Kala KA-15S, leve e ideal para iniciantes; a guitarra Fender Stratocaster American Pro II, para quem busca timbre versátil e qualidade premium; e o contrabaixo Music Man Bass 1X, elétrico e com som marcante para funk e rock. Quer detalhes em algum desses para seguir?"
+          "message": "Tenho opções variadas para você: um violão clássico Yamaha C40, bom para iniciantes; um ukulele soprano Kala KA-15S, leve e com som doce; uma guitarra elétrica Fender Stratocaster American Pro II, versátil para vários estilos; e um contrabaixo elétrico Music Man Bass 1X, com timbre marcante para funk e rock. Quer detalhes de algum ou prefere ver outras categorias?"
         }
       ]
     }
@@ -547,14 +583,17 @@
     {
       "case": "tanto-faz",
       "passed": true,
-      "seconds": 3.45,
+      "seconds": 4.06,
       "classification": [
         [
           "{\"intent\":\"store\",\"dismiss_budget_offer\":false,\"catalog_search\":{\"category_scope\":\"named\",\"category_ids\":[5],\"query\":null,\"min_price\":null,\"max_price\":null,\"in_stock\":true}}"
+        ],
+        [
+          "{\"general_catalog_request\":null,\"category_ids\":[]}"
         ]
       ],
       "tools": [],
-      "message": "Para você que é iniciante, recomendo alguns violões clássicos com cordas de nylon, que são mais macias para os dedos. Por exemplo, o Yamaha C40 é ideal para estudo, com ótimo som e conforto, e está na faixa de R$600. Se quiser algo mais leve, o Tagima Memphis AC-39 também é uma boa escolha, mais em conta, na faixa de R$430. Posso te ajudar a decidir entre esses ou mostrar outras opções?",
+      "message": "Tenho quatro opções de violão clássico para você, iniciante:\n\n1. Yamaha C40: bom para começar, com tampo em Spruce e cordas de nylon, som claro e confortável.\n2. Yamaha C70: nível intermediário, tampo sólido em Spruce, acabamento melhor e timbre equilibrado.\n3. Tagima Memphis AC-39: leve e confortável, ótimo para estudo, com corpo em Linden.\n4. Giannini GN-15: tampo em cedro, som mais quente, indicado para estudantes avançados.\n\nQuer que eu detalhe algum deles ou te mostro mais opções?",
       "product_count": 4,
       "preferences": {
         "category_id": 5,
@@ -565,14 +604,17 @@
     {
       "case": "free-wording",
       "passed": true,
-      "seconds": 2.97,
+      "seconds": 4.53,
       "classification": [
         [
-          "{\"intent\":\"store\",\"dismiss_budget_offer\":false,\"catalog_search\":{\"category_scope\":\"named\",\"category_ids\":[5],\"query\":null,\"min_price\":null,\"max_price\":null,\"in_stock\":true}}"
+          "{\"intent\":\"store\",\"dismiss_budget_offer\":true,\"catalog_search\":{\"category_scope\":\"named\",\"category_ids\":[5],\"query\":null,\"min_price\":null,\"max_price\":null,\"in_stock\":true}}"
+        ],
+        [
+          "{\"general_catalog_request\":null,\"category_ids\":[]}"
         ]
       ],
       "tools": [],
-      "message": "Aqui tem algumas opções boas para iniciantes, todas com cordas de nylon que são mais suaves para quem está começando:\n\n- Yamaha C40: clássico com tampo em Spruce, ótimo para projeção sonora.\n- Yamaha C70: modelo intermediário, tampo em Spruce sólido e acabamento superior.\n- Tagima Memphis AC-39: leve e confortável, ideal para longas práticas.\n- Giannini GN-15: tampo em cedro, som mais quente, bom para estudantes mais avançados.\n\nQuer que eu explique as diferenças entre elas ou mostro mais opções?",
+      "message": "Tenho quatro opções de violão clássico para você, todas com cordas de nylon, que são mais confortáveis para iniciantes. O Yamaha C40 é um modelo básico com tampo em spruce, bom para começar. O Yamaha C70 é um pouco mais avançado, com tampo sólido para um som mais equilibrado. O Tagima Memphis AC-39 é leve e confortável, ideal para estudo. E o Giannini GN-15 tem tampo em cedro, com som mais quente, indicado para quem já está um pouco mais avançado. Quer que eu detalhe algum deles?",
       "product_count": 4,
       "preferences": {
         "category_id": 5,
@@ -583,14 +625,17 @@
     {
       "case": "accept-offer",
       "passed": true,
-      "seconds": 2.54,
+      "seconds": 3.0,
       "classification": [
         [
           "{\"intent\":\"store\",\"dismiss_budget_offer\":false,\"catalog_search\":{\"category_scope\":\"previous\",\"category_ids\":[2],\"query\":null,\"min_price\":null,\"max_price\":\"7157.00\",\"in_stock\":true}}"
+        ],
+        [
+          "{\"general_catalog_request\":null,\"category_ids\":[]}"
         ]
       ],
       "tools": [],
-      "message": "Tem um baixo Music Man Bass 4X por R$ 7.157,00, que é elétrico com 4 cordas e corpo de ash. Ele tem um captador humbucker na ponte, ideal para rock e metal pelo ataque e definição. Está em estoque com 9 unidades. Quer mais detalhes ou outras opções?",
+      "message": "Tem um baixo disponível que pode te interessar: Music Man Bass 4X, elétrico, com 4 cordas, corpo em ash e braço em maple, na cor preta. É um modelo com captador humbucker, indicado para rock e metal, com ataque agressivo e definição. Está em estoque e custa R$ 7.157,00. Quer saber mais detalhes ou outras opções?",
       "product_count": 1,
       "preferences": {
         "category_id": 2,
@@ -602,14 +647,14 @@
     {
       "case": "reject-offer",
       "passed": true,
-      "seconds": 2.14,
+      "seconds": 1.84,
       "classification": [
         [
           "{\"intent\":\"store\",\"dismiss_budget_offer\":true,\"catalog_search\":null}"
         ]
       ],
       "tools": [],
-      "message": "Entendi, vou manter o limite de R$ 500 para baixos. Infelizmente, não temos nenhum nessa faixa no momento. Posso ajudar com algum outro instrumento ou em outra faixa de preço?",
+      "message": "Entendi, vou manter a busca por baixos até R$ 500,00. Infelizmente, não temos opções nessa faixa no momento. Quer que eu te mostre baixos um pouco acima desse valor, ou prefere outro instrumento?",
       "product_count": 0,
       "preferences": {
         "category_id": 2,
@@ -618,5 +663,8 @@
         "max_price": "500.00"
       }
     }
-  ]
+  ],
+  "temperature": 0,
+  "scope_resolution": "Separate current-message-only LLM extraction of named IDs and a verbatim span requesting the general catalog; taxonomy is reference system data, not user text. Query executed once after resolution.",
+  "development_note": "A prior single-pass implementation passed local scenarios but repeated category anchoring during a production check. Independent grounded scope extraction was added and the final reported/paraphrase/budget suites rerun. These are final-run observations, not a claim that previous attempts passed."
 }

@@ -24,6 +24,47 @@ def call(**args):
 
 
 class CategoryScopeTests(unittest.TestCase):
+    def test_new_query_replaces_offer_even_if_model_also_marks_dismissal(self):
+        from app.query_plan import parse_route
+        categories = Catalog(Path('data')).categories()['items']
+        decision = {'intent': 'store', 'catalog_search': {'category_ids': [5], 'max_price': None}, 'dismiss_budget_offer': True}
+        intent, plan = parse_route(json.dumps(decision), categories)
+        self.assertEqual(intent, 'store')
+        self.assertEqual(plan['category_id'], 5)
+        self.assertNotIn('max_price', plan)
+
+    def test_current_scope_extracts_named_types_separately_from_references(self):
+        from app.query_plan import apply_current_scope
+        categories = Catalog(Path('data')).categories()['items']
+        old = {'category_id': 5, 'max_price': '1000'}
+        for decision, message, expected in [({'category_ids': [4], 'general_catalog_request': None}, 'Quero teclado.', [4]),
+                ({'category_ids': [], 'general_catalog_request': 'instrumentos'}, 'Me dê instrumentos até mil.', []),
+                ({'category_ids': [], 'general_catalog_request': None}, 'Pode mostrar por esse valor.', [5])]:
+            plan = apply_current_scope(json.dumps(decision), old, categories, old, message)
+            self.assertEqual([plan['category_id']] if 'category_id' in plan else plan['category_ids'], expected)
+        with self.assertRaisesRegex(ValueError, 'quote'):
+            apply_current_scope(json.dumps({'category_ids': [], 'general_catalog_request': 'instrumentos'}),
+                old, categories, old, 'Pode mostrar por esse valor.')
+
+    def test_current_scope_is_resolved_without_history_before_query_execution(self):
+        store = ConversationStore()
+        provider = Mock()
+        # Contextual planning mistakenly carries a previous category. A separate
+        # current-message-only semantic decision must own the executed scope.
+        decision = {'intent': 'store', 'catalog_search': {'category_scope': 'named', 'category_ids': [5], 'max_price': '1000', 'in_stock': True}, 'dismiss_budget_offer': False}
+        provider.generate.side_effect = [text(json.dumps(decision)), text(json.dumps({'general_catalog_request': 'instrumentos', 'category_ids': []})), text('Veja as opções do catálogo.')]
+        with patch('app.web.conversations', store), patch('app.web.rate_limiter', RateLimiter()), patch('app.web.build_provider', return_value=provider), TestClient(app) as client:
+            initial = client.post('/api/catalog/search', json={'category_id': 5, 'max_price': '1000'}).json()
+            response = client.post('/api/chat', json={'conversation_id': initial['conversation_id'], 'message': 'Me dê instrumentos até mil.'})
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json()['search']['category_ids'], [])
+        self.assertEqual({p['category_id'] for p in response.json()['products']}, {5, 9})
+        scope_input = str(provider.generate.call_args_list[1].args[0])
+        self.assertNotIn('previous_messages', scope_input)
+        self.assertNotIn('Quero ver violões', scope_input)
+        self.assertNotIn('Violões', scope_input, 'Reference taxonomy must not be mistaken for instruments named by the customer')
+        self.assertIn('Violões', provider.generate.call_args_list[1].kwargs['system'])
+
     def test_rejected_offer_cannot_be_recreated_by_a_second_search(self):
         store = ConversationStore()
         provider = Mock()

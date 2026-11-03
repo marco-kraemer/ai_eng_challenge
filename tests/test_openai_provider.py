@@ -30,6 +30,7 @@ class OpenAIProviderTests(unittest.TestCase):
             body = kwargs['json']; requests.append(body)
             self.assertEqual(body['model'], 'gpt-4.1-mini')
             self.assertEqual(body['max_completion_tokens'], 2048)
+            self.assertEqual(body['temperature'], 0)
             self.assertFalse(body['store'])
             self.assertNotIn('provider', body)
             if len(requests) == 1:

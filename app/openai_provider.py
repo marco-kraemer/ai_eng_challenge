@@ -17,4 +17,4 @@ class OpenAI(ChatCompletionsTransport):
             raise RuntimeError('Configure OPEN_AI_KEY e OPENAI_MODEL=gpt-4.1-mini no servidor.')
 
     def request_body(self, messages, tools):
-        return {**super().request_body(messages, tools), 'max_completion_tokens': 2048, 'store': False}
+        return {**super().request_body(messages, tools), 'max_completion_tokens': 2048, 'temperature': 0, 'store': False}

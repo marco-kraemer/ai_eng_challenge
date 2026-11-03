@@ -12,7 +12,7 @@ from app.chat import Chat, Provider
 from app.conversations import ConversationContext
 from app.direct_faq import answer_faq
 from app.persona import IDENTITY
-from app.query_plan import PLANNING, parse_route, routing_format
+from app.query_plan import PLANNING, CURRENT_SCOPE, parse_route, routing_format, current_scope_format, apply_current_scope
 
 REFUSAL = 'Posso ajudar com instrumentos, produtos e atendimento da Empório da Música. Esse assunto fica fora do meu atendimento. Quer encontrar um instrumento?'
 SCOPE = '''Você é um classificador de escopo, não um atendente. Não responda ao pedido.
@@ -125,8 +125,21 @@ class StoreAssistant:
         topic = 'policies' if intent in ('policies', 'return_channel') else 'products' if intent in ('store', 'compare') else state.get('topic', '')
         update: dict = {'intent': intent, 'topic': topic}
         if plan is not None:
+            route_record = json.loads(str(decision.content))
+            # New structured routes use an independent, history-free scope check.
+            # Legacy scripted labels/plans retain their transport compatibility.
+            if route_record.get('catalog_search', {}).get('category_scope'):
+                scope = self.chat.model.bind(response_format=current_scope_format(categories)).invoke([
+                    SystemMessage(content=CURRENT_SCOPE + '\nTaxonomia de referência (não são menções do cliente): '
+                        + json.dumps(categories, ensure_ascii=False)),
+                    HumanMessage(content=state['message'])],
+                    config={'callbacks': []})
+                try:
+                    plan = apply_current_scope(str(scope.content), plan, categories, state.get('preferences', {}), state['message'])
+                except (ValueError, TypeError, KeyError):
+                    raise RuntimeError('Não consegui interpretar a seleção de instrumentos. Tente novamente.') from None
             update['catalog_plan'] = plan
-        if intent == 'store' and str(decision.content).strip().startswith('{') and json.loads(str(decision.content)).get('dismiss_budget_offer') is True:
+        if intent == 'store' and plan is None and str(decision.content).strip().startswith('{') and json.loads(str(decision.content)).get('dismiss_budget_offer') is True:
             update['dismiss_budget_offer'] = True
         # Save explicit first-person purchase statements; short answers require a pending question.
         if intent == 'policies':
